@@ -26,7 +26,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.List;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private GoogleMap mMap;
     LatLng datos, currPos;
@@ -35,9 +35,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Marker camMarker, currPositionMarker;
     LatLng currPosition;
     private String TAG = "MapsActivity";
-
-    private String RouteAPIURL = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1";
-
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
 
@@ -60,6 +57,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         datos = (LatLng) parametros.getParcelable("coordinates");
         cameraName = parametros.getString("cameraName");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        Log.d(TAG, "onCreate done");
     }
 
 
@@ -76,23 +74,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        LatLng ETSITCoord = new LatLng (40.431846, -3.711863);
         mMap = googleMap;
-        checkLocationPermissions();
 
-        rbMap = (RadioButton) findViewById(R.id.rbMap);
-        rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
-        rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
+        mMap.addMarker(new MarkerOptions().position(ETSITCoord).title("Marker in ETSIT UPM"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(ETSITCoord));
 
-       // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
-       // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
-
-
-        LatLng currentPosition = new LatLng(40.389877, -3.629053);
-
-        YOURSRoute yoursRoute = new YOURSRoute();
-        Log.d(TAG, "llamando a yoursRoute.get_route");
-        List<LatLng> route = yoursRoute.draw_route(currentPosition, datos);
-        Log.d(TAG, "llamada a yoursRoute.get_route finalizada");
+        //mMap.setOnMapClickListener(this);
+//        Log.d(TAG, "Map is ready");
+//        mMap = googleMap;
+//        checkLocationPermissions();
+//
+//        rbMap = (RadioButton) findViewById(R.id.rbMap);
+//        rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
+//        rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
+//
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
+//
+//
+//        LatLng currentPosition = new LatLng(40.389877, -3.629053);
+//
+//        YOURSRoute yoursRoute = new YOURSRoute();
+//        Log.d(TAG, "llamando a yoursRoute.get_route");
+//        List<LatLng> route = yoursRoute.draw_route(currentPosition, datos);
+//        Log.d(TAG, "llamada a yoursRoute.get_route finalizada");
     }
 
     public void onRadioButtonClicked(View view) {
