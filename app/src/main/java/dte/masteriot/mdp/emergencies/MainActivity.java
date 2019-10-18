@@ -68,14 +68,14 @@ public class MainActivity extends AppCompatActivity {
         im = findViewById(R.id.imageView);
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image greater
 
-        DownloadWebPageTask task = new DownloadWebPageTask();
-        task.execute( URL_CAMERAS );
+        DownloadWebPageTask task1 = new DownloadWebPageTask(), task2 = new DownloadWebPageTask();
+        task1.execute( URL_CAMERAS );
 
         MQTTchannels = new ArrayList<>();
         channels = new Channels[4];
 
         final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
-        task.execute( URL_CHANNELS_JSON);
+        task2.execute( URL_CHANNELS_JSON);
 
 
 
@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if (contentType.contains("json")){
                     channels = gson.fromJson(new InputStreamReader(is), Channels[].class);
-
+                    response = "GSON PARSED";
                 }
             } catch (Exception e) {
                 response = e.toString();
@@ -175,8 +175,8 @@ public class MainActivity extends AppCompatActivity {
             }else if(contentType.contains("json")) {
                 for (int i = 0; i < 4; i++) {
                     String write_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[0].api_key : channels[i].api_keys[1].api_key;
-                    String read_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[1].api_key : channels[i].api_keys[2].api_key;
-                    Position position = new Position(Integer.getInteger(channels[i].latitude), Integer.getInteger(channels[i].longitude));
+                    String read_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[1].api_key : channels[i].api_keys[0].api_key;
+                    LatLng position = new LatLng(Double.valueOf(channels[i].latitude), Double.valueOf(channels[i].longitude));
                     MQTTchannels.add(new MQTTchannel(Integer.toString(channels[i].id), position, write_api_key, read_api_key));
                 }
             }
