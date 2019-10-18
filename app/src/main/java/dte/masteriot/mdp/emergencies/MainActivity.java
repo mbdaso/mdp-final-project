@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,17 +47,20 @@ public class MainActivity extends AppCompatActivity {
     Integer pos=0;
     int numEmergencies = 0;
 
+    List<MQTTchannel> MQTTchannels;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
         text =  (TextView) findViewById(R.id.textView);
-        text.setText("Number of Emergencies: "+numEmergencies);
+        text.setText("Number of Emergencies: " + numEmergencies);
         im = findViewById(R.id.imageView);
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image greater
 
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
+        MQTTchannels = new ArrayList<>();
 
     }
 
