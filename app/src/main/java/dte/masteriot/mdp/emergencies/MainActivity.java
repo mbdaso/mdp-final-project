@@ -2,6 +2,7 @@ package dte.masteriot.mdp.emergencies;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -18,16 +19,19 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import dte.masteriot.mdp.emergencies.MQTTchannel;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,7 +51,13 @@ public class MainActivity extends AppCompatActivity {
     Integer pos=0;
     int numEmergencies = 0;
 
+    //MQTT variables
     List<MQTTchannel> MQTTchannels;
+    private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
+    private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
+    final String serverUri = "tcp://mqtt.thingspeak.com:1883";
+    String clientId = "Emergencies_collector";
+    Channels[] channels;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,13 +70,21 @@ public class MainActivity extends AppCompatActivity {
 
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
+
         MQTTchannels = new ArrayList<>();
+        channels = new Channels[4];
+
+        final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
+        task.execute( URL_CHANNELS_JSON);
+
+
 
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
 
         private String contentType = "";
+        Gson gson = new Gson();
 
         @Override
         @SuppressWarnings( "deprecation" )
@@ -79,46 +97,51 @@ public class MainActivity extends AppCompatActivity {
                 urlConnection = (HttpURLConnection) url.openConnection();
                 contentType = urlConnection.getContentType();
                 InputStream is = urlConnection.getInputStream();
-                parserFactory = XmlPullParserFactory.newInstance();
-                XmlPullParser parser = parserFactory.newPullParser();
-                parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-                parser.setInput(is, null);
-                String aux;
-                int eventType = parser.getEventType();
-                while (eventType != XmlPullParser.END_DOCUMENT) {
-                    String elementName = null;
-                    elementName = parser.getName();
-                    switch (eventType) {
-                        case XmlPullParser.START_TAG:
-                            if ("description".equals(elementName)) {
-                                String cameraURL = parser.nextText();
-                                cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
-                                cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
-                                camerasURLS_ArrayList.add(cameraURL);
-                                response+=cameraURL + "\n";
-                            } else if ("Data".equals(elementName)) {
-                                aux=parser.getAttributeValue(null,"name");
-                             //   Log.v("EEEEE", aux );
-                                if (aux.equals("Nombre")){
-                                    String aux1;
-                                    parser.nextTag();
-                                    aux1=parser.nextText();
-                                    Log.v("aux1", aux1);
-                                    nameURLS_ArrayList.add(aux1);
+                if(contentType.contains("xml")) {
+                    parserFactory = XmlPullParserFactory.newInstance();
+
+                    XmlPullParser parser = parserFactory.newPullParser();
+                    parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+                    parser.setInput(is, null);
+                    String aux;
+                    int eventType = parser.getEventType();
+                    while (eventType != XmlPullParser.END_DOCUMENT) {
+                        String elementName = null;
+                        elementName = parser.getName();
+                        switch (eventType) {
+                            case XmlPullParser.START_TAG:
+                                if ("description".equals(elementName)) {
+                                    String cameraURL = parser.nextText();
+                                    cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
+                                    cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
+                                    camerasURLS_ArrayList.add(cameraURL);
+                                    response += cameraURL + "\n";
+                                } else if ("Data".equals(elementName)) {
+                                    aux = parser.getAttributeValue(null, "name");
+                                    //   Log.v("EEEEE", aux );
+                                    if (aux.equals("Nombre")) {
+                                        String aux1;
+                                        parser.nextTag();
+                                        aux1 = parser.nextText();
+                                        Log.v("aux1", aux1);
+                                        nameURLS_ArrayList.add(aux1);
+                                    }
+
+                                } else if ("coordinates".equals(elementName)) {
+                                    String coorURL = parser.nextText();
+                                    String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
+                                    String lon = coorURL.substring(0, coorURL.indexOf(","));
+                                    coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(), Double.valueOf(lon).doubleValue()));
+
                                 }
-
-                            }else if("coordinates".equals(elementName)){
-                                String coorURL=parser.nextText();
-                                String lat= coorURL.substring((coorURL.indexOf(","))+1, coorURL.length()-4);
-                                String lon = coorURL.substring(0, coorURL.indexOf(","));
-                                coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(),Double.valueOf(lon).doubleValue()));
-
-                            }
-                            break;
+                                break;
+                        }
+                        eventType = parser.next();
                     }
-                    eventType = parser.next();
-                }
+                } else if (contentType.contains("json")){
+                    channels = gson.fromJson(new InputStreamReader(is), Channels[].class);
 
+                }
             } catch (Exception e) {
                 response = e.toString();
             }
@@ -128,26 +151,35 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            lv = (ListView) findViewById(R.id.lv);
-            ArrayAdapter arrayAdapter = new ArrayAdapter( MainActivity.this, android.R.layout.simple_list_item_checked , nameURLS_ArrayList );
-            lv.setAdapter(arrayAdapter);
+            if (contentType.contains("xml")) {
+                lv = (ListView) findViewById(R.id.lv);
+                ArrayAdapter arrayAdapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
+                lv.setAdapter(arrayAdapter);
 
-            lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
+                lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-            lv.setClickable(true);
-            lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                lv.setClickable(true);
+                lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-                @Override
-                public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                    Object o = lv.getItemAtPosition(position);
-                    String str=(String)o;//As you are using Default String Adapter
-                    Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
-                    pos=position;
-                    CargaImagenes task = new CargaImagenes();
-                    task.execute( camerasURLS_ArrayList.get(position) );
+                    @Override
+                    public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
+                        Object o = lv.getItemAtPosition(position);
+                        String str = (String) o;//As you are using Default String Adapter
+                        Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
+                        pos = position;
+                        CargaImagenes task = new CargaImagenes();
+                        task.execute(camerasURLS_ArrayList.get(position));
 
+                    }
+                });
+            }else if(contentType.contains("json")) {
+                for (int i = 0; i < 4; i++) {
+                    String write_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[0].api_key : channels[i].api_keys[1].api_key;
+                    String read_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[1].api_key : channels[i].api_keys[2].api_key;
+                    Position position = new Position(Integer.getInteger(channels[i].latitude), Integer.getInteger(channels[i].longitude));
+                    MQTTchannels.add(new MQTTchannel(Integer.toString(channels[i].id), position, write_api_key, read_api_key));
                 }
-            });
+            }
         }
     }
 
