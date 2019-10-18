@@ -1,6 +1,7 @@
 package dte.masteriot.mdp.emergencies;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
@@ -27,11 +28,10 @@ import com.google.android.gms.tasks.OnSuccessListener;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    LatLng datos, currPos;
+    LatLng camPos, currPos;
     String cameraName;
     RadioButton rbMap, rbSatellite, rbHybrid;
     Marker camMarker, currPositionMarker;
-    LatLng currPosition;
     private String TAG = "MapsActivity";
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
@@ -52,9 +52,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        Bundle parametros = this.getIntent().getParcelableExtra("bundle");
-        datos = (LatLng) parametros.getParcelable("coordinates");
-        cameraName = parametros.getString("cameraName");
+        Bundle params = this.getIntent().getParcelableExtra("bundle");
+        camPos = (LatLng) params.getParcelable("coordinates");
+        cameraName = params.getString("cameraName");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
     }
@@ -72,13 +72,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        checkLocationPermissions();
-
         rbMap = (RadioButton) findViewById(R.id.rbMap);
         rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
         rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
 
-
+        checkLocationPermissions();
        // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
        // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
 
@@ -90,51 +88,70 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Check which radio button was clicked
         switch(view.getId()) {
-            case R.id.map:
-                if (checked)
+            case R.id.map: {
+                if (checked) {
                     mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                    Log.e("RadioButton:", "Map type clicked");
+                }
 
                 break;
-            case R.id.satellite:
-                if (checked)
+            }
+            case R.id.satellite: {
+                if (checked) {
                     mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-                //  uno.setChecked(false);
-                //  tres.setChecked(false);
-
+                    Log.e("RadioButton:", "Sat type clicked");
+                }
                 break;
-            case R.id.hybrid:
-                if (checked)
+            }
+            case R.id.hybrid: {
+                if (checked) {
                     mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-                //  uno.setChecked(false);
-                //  dos.setChecked(false);
+                    Log.e("RadioButton:", "Hybrid type clicked");
+                }
                 break;
+            }
         }
     }
     private void checkLocationPermissions() {
-        //If Android version is M (6.0 API 23) or newer, check if it has Location permissions
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                //If Location permissions are not granted for the app, ask user for it! Request response will be received in the onRequestPermissionsResult.
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
-            }
-            else {
-                //We change the value of permissions' variable
-                permissionCoarseGranted = true;
-                //initBT();
-            }
-            if(this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
-            }else{
-                permissionFineGranted = true;
-            }
-            if(permissionCoarseGranted || permissionFineGranted){
-                //If any of the permissions are granted we proceed with accessing to current location
-                getCurrentLocation();
 
-            }else{
-                //If any of the permissions is not granted, we have to show a message informing that the current location won´t be shown
-                Log.e(TAG, "User denied location permissions");
+            //If any of the permissions is not granted, we have to show a message informing that the current location won´t be shown
+           // Log.e(TAG, "User denied location permissions");
+            //If Android version is M (6.0 API 23) or newer, check if it has Location permissions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if((this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
+                        (this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)){
+                    getCurrentLocation();
+                } else {
+                    if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        //If Location permissions are not granted for the app, ask user for it! Request response will be received in the onRequestPermissionsResult.
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+                    }
+                    if(this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
+                    }
+                }
+
+                else {
+                    //We change the value of permissions' variable
+                    permissionCoarseGranted = true;
+                    //initBT();
+                }
+                if(this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
+                }else{
+                    permissionFineGranted = true;
+                }
+            }  else { //If Android version is older than M, what do we do? Do we grant or deny the permissions?
+                //We grant
+               /* permissionCoarseGranted = true;
+                permissionFineGranted = true;
+                */
+               //We deny
+                permissionCoarseGranted = false;
+                permissionFineGranted = false;
+
             }
+
 
         }
     }
@@ -147,41 +164,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Log.i( TAG, "/+++++++++++++++++++++");
                     Log.d("TAG", "coarse location permission granted");
                     Log.i( TAG, "/+++++++++++++++++++++");
-
+                    permissionCoarseGranted = true;
                     //Get current location
-                    getCurrentLocation();
+                 //  getCurrentLocation();
 
                 } else {
                     //User denied Location permissions. Here you could warn the user that without
                     //Location permissions the app is not able to scan for BLE devices
                     //In this case we just close the app
-                    //finish();
+
                     Log.e(TAG, "User denied coarse location permissions");
+                    finish();
                 }
-                return;
+
             }
-            case PERMISSION_REQUEST_FINE_LOCATION:{
+            case PERMISSION_REQUEST_FINE_LOCATION:{ //Aquí da error
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     //User granted permissions. Setup the scan settings
                     Log.i( TAG, "/+++++++++++++++++++++");
                     Log.d("TAG", "fine location permission granted");
                     Log.i( TAG, "/+++++++++++++++++++++");
-
+                    permissionFineGranted = true;
                     //Get current location
-                    getCurrentLocation();
+                    //getCurrentLocation();
 
                 } else {
                     //User denied Location permissions. Here you could warn the user that without
                     //Location permissions the app is not able to scan for BLE devices
                     //In this case we just close the app
-                    //finish();
+
                     Log.e(TAG, "User denied fine location permissions");
+                    finish();
                 }
-                return;
+
 
             }
         }
+        if(permissionCoarseGranted && permissionFineGranted){
+            //If any of the permissions are granted we proceed with accessing to current location
+            getCurrentLocation();
+
+        }
+
     }
+    @SuppressLint("MissingPermission")
     public void getCurrentLocation(){
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -191,13 +217,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (location != null) {
                             // Logic to handle location object
                            currPos = new LatLng(location.getLatitude(), location.getLongitude());
-                            camMarker = mMap.addMarker(new MarkerOptions().position(datos).title(cameraName));
+                           camMarker = mMap.addMarker(new MarkerOptions().position(camPos).title(cameraName));
                             //FALTA CAMBIAR EL COLOR A NARANJA
-                            currPositionMarker = mMap.addMarker(new MarkerOptions().position(currPos).title("CURRENT POSITION"));
-                            if (currPos.latitude < datos.latitude) {
-                                bounds = new LatLngBounds(currPos, datos);
+                           currPositionMarker = mMap.addMarker(new MarkerOptions().position(currPos).title("CURRENT POSITION"));
+                            if (currPos.latitude < camPos.latitude) {
+                                bounds = new LatLngBounds(currPos, camPos);
                             } else {
-                                bounds = new LatLngBounds(currPos, datos);
+                                bounds = new LatLngBounds(currPos, camPos);
                             }
                             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 50));
                         }

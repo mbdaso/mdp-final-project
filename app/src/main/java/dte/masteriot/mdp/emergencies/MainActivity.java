@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         text =  (TextView) findViewById(R.id.textView);
         text.setText("Number of Emergencies: "+numEmergencies);
         im = findViewById(R.id.imageView);
-        im.setImageResource(R.mipmap.upmiot); //To check how to show this image greater
+        im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
 
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
