@@ -24,6 +24,8 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.util.List;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
@@ -33,6 +35,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Marker camMarker, currPositionMarker;
     LatLng currPosition;
     private String TAG = "MapsActivity";
+
+    private String RouteAPIURL = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1";
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
@@ -56,7 +60,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         datos = (LatLng) parametros.getParcelable("coordinates");
         cameraName = parametros.getString("cameraName");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
     }
 
 
@@ -69,6 +72,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -78,12 +83,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
         rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
 
-
        // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
        // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
 
 
+        LatLng currentPosition = new LatLng(40.389877, -3.629053);
+
+        YOURSRoute yoursRoute = new YOURSRoute();
+        Log.d(TAG, "llamando a yoursRoute.get_route");
+        List<LatLng> route = yoursRoute.draw_route(currentPosition, datos);
+        Log.d(TAG, "llamada a yoursRoute.get_route finalizada");
     }
+
     public void onRadioButtonClicked(View view) {
         // Is the button now checked?
         boolean checked = ((RadioButton) view).isChecked();
@@ -145,7 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     //User granted permissions. Setup the scan settings
                     Log.i( TAG, "/+++++++++++++++++++++");
-                    Log.d("TAG", "coarse location permission granted");
+                    Log.d(TAG, "coarse location permission granted");
                     Log.i( TAG, "/+++++++++++++++++++++");
 
                     //Get current location
@@ -169,6 +180,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     //Get current location
                     getCurrentLocation();
+                    //Draw route to selected camera
 
                 } else {
                     //User denied Location permissions. Here you could warn the user that without
@@ -203,7 +215,5 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     }
                 });
-
-
     }
 }
