@@ -2,7 +2,6 @@ package dte.masteriot.mdp.emergencies;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -21,6 +20,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -58,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     final String serverUri = "tcp://mqtt.thingspeak.com:1883";
     String clientId = "Emergencies_collector";
     Channels[] channels;
+    MqttAndroidClient mqttAndroidClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,8 +86,103 @@ public class MainActivity extends AppCompatActivity {
         final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
         task2.execute( URL_CHANNELS_JSON);
 
+        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
+        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+
+                if (reconnect) {
+                    addToHistory("Reconnected to : " + serverURI);
+                    // Because Clean Session is true, we need to re-subscribe
+                    subscribeToTopic();
+                } else {
+                    addToHistory("Connected to: " + serverURI);
+                }
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+                addToHistory("The Connection was lost.");
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                addToHistory("Incoming message: " + new String(message.getPayload()));
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+            }
+        });
+        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+        mqttConnectOptions.setAutomaticReconnect(true);
+        // mqttConnectOptions.setCleanSession(false);
+        mqttConnectOptions.setCleanSession(true);
+
+        mqttConnectOptions.setUserName( "Emergencies_Collector" );
+        mqttConnectOptions.setPassword( MQTTAPIKey.toCharArray() );
+
+        try {
+            //addToHistory("Connecting to " + serverUri);
+            mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                    disconnectedBufferOptions.setBufferEnabled(true);
+                    disconnectedBufferOptions.setBufferSize(100);
+                    disconnectedBufferOptions.setPersistBuffer(false);
+                    disconnectedBufferOptions.setDeleteOldestMessages(false);
+                    mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+                    subscribeToTopic();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    addToHistory("Failed to connect to: " + serverUri);
+                }
+            });
 
 
+        } catch (MqttException ex){
+            ex.printStackTrace();
+        }
+
+    }
+
+    private void addToHistory(String mainText){
+        System.out.println("LOG: " + mainText);
+    }
+
+    public void subscribeToTopic(){
+        for (MQTTchannel channel : MQTTchannels) {
+            try {
+                mqttAndroidClient.subscribe(channel.subscriptionTopic, 0, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        addToHistory("Subscribed!");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        addToHistory("Failed to subscribe");
+                    }
+                });
+
+
+                // THIS DOES NOT WORK!
+//            mqttAndroidClient.subscribe(subscriptionTopic, 0, new IMqttMessageListener() {
+//                @Override
+//                public void messageArrived(String topic, MqttMessage message) throws Exception {
+//                    // message Arrived!
+//                    System.out.println("Message: " + topic + " : " + new String(message.getPayload()));
+//                }
+//            });
+
+            } catch (MqttException ex) {
+                System.err.println("Exception whilst subscribing");
+                ex.printStackTrace();
+            }
+        }
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
