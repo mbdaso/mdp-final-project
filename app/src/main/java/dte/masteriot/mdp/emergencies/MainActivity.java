@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView im;
   //  LatLng coor;
    // String auxcoor;
-    Integer pos=1;
+    Integer pos=0;
     int numEmergencies = 0;
 
     @Override
