@@ -2,16 +2,22 @@ package dte.masteriot.mdp.emergencies;
 
 import android.os.AsyncTask;
 import android.util.Log;
-
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /* Cuando se abre el mapa, se solicita la ruta desde currentPosition a la cámara que se ha
@@ -26,8 +32,12 @@ public class YOURSRoute {
     String TAG = "MapsActivity";
 
     private LatLng currentPosition = new LatLng(40.389877, -3.629053);
-
-    private String BaseURL = "http://www.yournavigation.org/api/1.0/gosmore.php";
+    /*
+     * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&
+     * tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
+     * */
+    private String baseURL = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml";
+    private String paramsEnd = "&v=motorcar&fast=1&layer=mapnik&instructions=1";
     //TODO: ask for transport type
     private String transport_type = "v=foot";
     private String flat; // latitude of the starting location.
@@ -35,6 +45,7 @@ public class YOURSRoute {
     private String tlat; // latitude of the end location.
     private String tlon; // longitude of the end location.
     private List<LatLng> route;
+
     /*PROBANDO RUTAS
     *
     * Origen 40.378729, -3.613838
@@ -53,63 +64,92 @@ lang = specifies the language code in which the routing directions are returned.
 
 
     /*
-    * http://www.yournavigation.org/api/1.0/gosmore.php?flat=-3.613838&flon=40.378729&tlat=-3.626836&tlon=40.021892
-    *
+    * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
+    * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&
+    flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
     * */
 
+    public String addURLKeyValue(String url, String key, String value){
+        String separator = url.endsWith("?") ? "" : "&";
+        return url + separator + key + "=" + value;
+    }
 
-    public List<LatLng> draw_route(LatLng source, LatLng dest) {
 
-        String RequestURLString = "http://www.yournavigation.org/api/1.0/gosmore.php?" +
-                "format=kml&flat=" + source.latitude + "&flon=" + source.longitude +
-                "&tlat="+ dest.latitude + "&tlon=" + dest.longitude +
-                "v=motorcar&fast=1&layer=mapnik&instructions=1";
-        Log.d(TAG, RequestURLString);
+    /*Esta url va bien
+    * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&%20flat=40.452162&flon=-3.725778&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
+    * */
 
-        //URL RequestURL = new URL(RequestURLString);
-/*
-        //Descargar fichero de internet
-        XmlPullParserFactory parserFactory;
+    public URL buildRouteURL(LatLng source, LatLng dest)
+            throws UnsupportedEncodingException, MalformedURLException {
+        //TODO: Por qué los parámetros longitud, latitud van al revés?
+        URL builtURL;
         try {
-            parserFactory = XmlPullParserFactory.newInstance();
+            String urlString = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml" +
+                    "&flat=" + source.latitude + "&flon=" + source.longitude +
+                    "&tlat=" + dest.latitude + "&tlon=" + source.longitude +
+                    "&v=motorcar&fast=1&layer=mapnik&instructions=1";
+            builtURL = new URL(urlString);
+            Log.d(TAG, "URL de la ruta: " +builtURL);
+        }
+        catch(Exception e){
+            Log.d(TAG, "No se ha podido construir la URL: " + e.getMessage());
+            builtURL = new URL("");
+        }
+        return builtURL;
+    }
+
+    public List<LatLng> getRouteFromXML(InputStream is){
+        //XMLPullParser
+        List<LatLng> route = Arrays.asList();
+        try {
+            XmlPullParserFactory parserFactory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = parserFactory.newPullParser();
-            InputStream is =
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(is, null);
+            String aux;
             int eventType = parser.getEventType();
-
             while (eventType != XmlPullParser.END_DOCUMENT) {
-                String elementName;
+                String elementName = null;
                 elementName = parser.getName();
                 switch (eventType) {
                     case XmlPullParser.START_TAG:
-                        if ("description".equals(elementName)) {
-                            String cameraURL = parser.nextText();
-                            cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
-                            cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
-                            camerasURLS_ArrayList.add(cameraURL);
-                        }
-                        else if ("Data".equals(elementName)){
-                            Log.d(TAG, parser.getAttributeValue(null, "name"));
-                            if ("Nombre".equals(parser.getAttributeValue(null, "name"))){
-                                parser.nextTag();
-                                cameraNames.add(parser.nextText());
-                            }
+                        if ("coordinates".equals(elementName)) {
+                            String coordinates = parser.nextText();
+                            route = parseCoordinatesString(coordinates);
                         }
                         break;
-                } //switch
+                }
                 eventType = parser.next();
-            } //while
-        } //Try
-        catch (Exception e){
-            Log.d(TAG, "Exception");
-            String err = (e.getMessage()==null)?"SD Card failed":e.getMessage();
-            Log.d("sdcard-err2:",err);
-        } //Catch
+            }
 
-*/
+        } catch (Exception e) {
+            Log.d(TAG, "getRouteFromXML: " + e.getMessage());
+        }
+        return route;
+    }
+
+    private List<LatLng> parseCoordinatesString(String coordinates) {
+        Log.d(TAG, "coordinates: " + coordinates);
+        List<LatLng> route = Arrays.asList();
+        String[] lines = coordinates.split("\n");
+        for(String line : lines){
+            Log.d(TAG, "line: " + line);
+            line = line.trim();
+            if(line.length() > 0) {
+                String[] latLng = line.split(",");
+                LatLng point = new LatLng(Double.parseDouble(latLng[0]),
+                        Double.parseDouble(latLng[1]));
+                Log.d(TAG, "point: " + point.toString());
+                route.add(point);
+            }
+        }
+        Log.d(TAG, "route: " + route.toString());
+
+
 
         return route;
     }
+
+
 }
 

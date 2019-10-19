@@ -57,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
 
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
-
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
@@ -125,7 +124,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             lv = (ListView) findViewById(R.id.lv);
-            ArrayAdapter arrayAdapter = new ArrayAdapter( MainActivity.this, android.R.layout.simple_list_item_checked , nameURLS_ArrayList );
+            ArrayAdapter arrayAdapter = new ArrayAdapter( MainActivity.this,
+                    android.R.layout.simple_list_item_checked ,
+                    nameURLS_ArrayList );
             lv.setAdapter(arrayAdapter);
 
             lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
@@ -141,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
                     pos=position;
                     CargaImagenes task = new CargaImagenes();
                     task.execute( camerasURLS_ArrayList.get(position) );
-
                 }
             });
         }

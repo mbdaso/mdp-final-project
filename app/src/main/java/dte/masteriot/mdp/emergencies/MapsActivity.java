@@ -3,12 +3,12 @@ package dte.masteriot.mdp.emergencies;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.RadioButton;
-import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -24,12 +24,17 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private GoogleMap mMap;
-    LatLng datos, currPos;
+    LatLng datos, currPos, cameraPosition;
+    LatLng currPositionTest = new LatLng(40.431813,-3.711852);
     String cameraName;
     RadioButton rbMap, rbSatellite, rbHybrid;
     Marker camMarker, currPositionMarker;
@@ -37,6 +42,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private String TAG = "MapsActivity";
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
+    private YOURSRoute yoursRoute = new YOURSRoute();
+
 
     boolean permissionCoarseGranted = false;
     boolean permissionFineGranted = false;
@@ -55,6 +62,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
+        cameraPosition = datos;
         cameraName = parametros.getString("cameraName");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         Log.d(TAG, "onCreate done");
@@ -74,31 +82,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        LatLng ETSITCoord = new LatLng (40.431846, -3.711863);
+//        mMap.setOnMapClickListener(this);
+        Log.d(TAG, "Map is ready");
         mMap = googleMap;
+        checkLocationPermissions();
 
-        mMap.addMarker(new MarkerOptions().position(ETSITCoord).title("Marker in ETSIT UPM"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(ETSITCoord));
+        rbMap = (RadioButton) findViewById(R.id.rbMap);
+        rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
+        rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
 
-        //mMap.setOnMapClickListener(this);
-//        Log.d(TAG, "Map is ready");
-//        mMap = googleMap;
-//        checkLocationPermissions();
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
+        //Probando pintar un PolyLine
+//        RouteTest routeTest = new RouteTest();
 //
-//        rbMap = (RadioButton) findViewById(R.id.rbMap);
-//        rbSatellite =(RadioButton) findViewById(R.id.rbSatellite);
-//        rbHybrid =(RadioButton) findViewById(R.id.rbHybrid);
-//
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
-//
-//
-//        LatLng currentPosition = new LatLng(40.389877, -3.629053);
-//
-//        YOURSRoute yoursRoute = new YOURSRoute();
-//        Log.d(TAG, "llamando a yoursRoute.get_route");
-//        List<LatLng> route = yoursRoute.draw_route(currentPosition, datos);
-//        Log.d(TAG, "llamada a yoursRoute.get_route finalizada");
+//        PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+//        for(LatLng point: routeTest.route){
+//            options.add(point);
+//            Log.d(TAG, "Adding " + point);
+//        }
+//        Polyline line = mMap.addPolyline(options);
+
+        MapRouteTask task = new MapRouteTask();
+        task.execute(currPositionTest, cameraPosition);
     }
 
     public void onRadioButtonClicked(View view) {
@@ -221,5 +227,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     }
                 });
+    }
+
+    private class MapRouteTask extends AsyncTask<LatLng, Void, List<LatLng>> {
+        @Override
+        @SuppressWarnings( "deprecation" )
+        protected List<LatLng> doInBackground(LatLng ... srcdst) {
+            LatLng src = srcdst[0];
+            LatLng dst = srcdst[1];
+            List<LatLng> route;
+            try {
+                URL apiURL = yoursRoute.buildRouteURL(src, dst);
+                HttpURLConnection urlConnection = (HttpURLConnection) apiURL.openConnection();
+                InputStream is = urlConnection.getInputStream();
+                route = yoursRoute.getRouteFromXML(is);
+            }
+            catch(Exception e){
+                Log.d(TAG, "MapRouteTask: " + e. getMessage());
+                route = Arrays.asList();
+            }
+            return route;
+        }
+
+        @Override
+        protected void onPostExecute(List<LatLng> route) {
+            Log.d(TAG, "MapRouteTask finished!");
+        }
     }
 }
