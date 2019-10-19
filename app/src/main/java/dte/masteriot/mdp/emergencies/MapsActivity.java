@@ -2,6 +2,7 @@ package dte.masteriot.mdp.emergencies;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -22,6 +23,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.io.InputStream;
@@ -93,18 +96,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(datos, 15));
-        //Probando pintar un PolyLine
-//        RouteTest routeTest = new RouteTest();
-//
-//        PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
-//        for(LatLng point: routeTest.route){
-//            options.add(point);
-//            Log.d(TAG, "Adding " + point);
-//        }
-//        Polyline line = mMap.addPolyline(options);
+
 
         MapRouteTask task = new MapRouteTask();
         task.execute(currPositionTest, cameraPosition);
+
     }
 
     public void onRadioButtonClicked(View view) {
@@ -251,7 +247,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         @Override
         protected void onPostExecute(List<LatLng> route) {
-            Log.d(TAG, "MapRouteTask finished!");
+            //Probando pintar un PolyLine
+            // Esta línea sí la pinta (en madagascar o por ahí, es de prueba)
+//            RouteTest routeTest = new RouteTest();
+//            route = routeTest.route;
+
+            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+            for(LatLng point: route){
+                options.add(point);
+//                Log.d(TAG, "Adding " + point);
+            }
+
+            Polyline line = mMap.addPolyline(options);
+            Log.d(TAG, "Ruta pintada " + route.get(0) + "hasta " + route.get(route.size() - 1));
         }
     }
 }

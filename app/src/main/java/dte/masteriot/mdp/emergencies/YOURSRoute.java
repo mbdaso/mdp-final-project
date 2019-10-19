@@ -98,9 +98,9 @@ lang = specifies the language code in which the routing directions are returned.
         return builtURL;
     }
 
-    public List<LatLng> getRouteFromXML(InputStream is){
+    public ArrayList<LatLng> getRouteFromXML(InputStream is){
         //XMLPullParser
-        List<LatLng> route = Arrays.asList();
+        ArrayList<LatLng> route = new ArrayList<>();
         try {
             XmlPullParserFactory parserFactory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = parserFactory.newPullParser();
@@ -128,28 +128,26 @@ lang = specifies the language code in which the routing directions are returned.
         return route;
     }
 
-    private List<LatLng> parseCoordinatesString(String coordinates) {
-        Log.d(TAG, "coordinates: " + coordinates);
-        List<LatLng> route = Arrays.asList();
+    private ArrayList<LatLng> parseCoordinatesString(String coordinates) {
+        ArrayList<LatLng> route = new ArrayList<>();
         String[] lines = coordinates.split("\n");
-        for(String line : lines){
-            Log.d(TAG, "line: " + line);
+        //Log.d(TAG, "n lines: " + lines.length);
+        for(String line: lines){
+            // Aquí dice que solo hay una linea
             line = line.trim();
             if(line.length() > 0) {
                 String[] latLng = line.split(",");
                 LatLng point = new LatLng(Double.parseDouble(latLng[0]),
                         Double.parseDouble(latLng[1]));
-                Log.d(TAG, "point: " + point.toString());
-                route.add(point);
+                try{
+                    route.add(point);
+                }
+                catch(Exception e){
+                    Log.d(TAG, "Exception: " +  e.getMessage());
+                }
             }
         }
-        Log.d(TAG, "route: " + route.toString());
-
-
-
         return route;
     }
 
-
 }
-
