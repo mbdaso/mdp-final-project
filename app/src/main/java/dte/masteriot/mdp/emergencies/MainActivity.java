@@ -63,8 +63,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
     final String serverUri = "tcp://mqtt.thingspeak.com:1883";
+    final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
+
     String clientId = "Emergencies_collector1";
-    Channel[] channels;
+    JSONChannel[] channels;
     boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     MqttAndroidClient mqttAndroidClient;
 
@@ -81,9 +83,7 @@ public class MainActivity extends AppCompatActivity {
         task1.execute( URL_CAMERAS );
 
         mqttChannels = new ArrayList<>();
-        channels = new Channel[4];
-        final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
-        task2.execute( URL_CHANNELS_JSON);
+        channels = new JSONChannel[4];
     }
 
    
@@ -203,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
             numEmergencies += firedEmer[i] ? 1 : 0;
         }
         text.setText(String.format("Number of Emergencies: %d", numEmergencies));
+        // TODO add list modifier (putting background in red)
 
     }
 
@@ -264,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                         eventType = parser.next();
                     }
                 } else if (contentType.contains("json")){
-                    channels = gson.fromJson(new InputStreamReader(is), Channel[].class);
+                    channels = gson.fromJson(new InputStreamReader(is), JSONChannel[].class);
                     response = "GSON PARSED";
                 }
             } catch (Exception e) {
@@ -297,12 +298,16 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
+                DownloadWebPageTask task1 = new DownloadWebPageTask();
+                task1.execute( URL_CHANNELS_JSON);
+
             }else if(contentType.contains("json")) {
-                for (Channel channel : channels) {
+                for (JSONChannel channel : channels) {
                     String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
                     String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
                     LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
                     mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key));
+
                 }
                 connectToMQTTChannels();
             }
@@ -317,8 +322,6 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             // TODO Auto-generated method stub
             super.onPreExecute();
-
-
         }
 
         @Override

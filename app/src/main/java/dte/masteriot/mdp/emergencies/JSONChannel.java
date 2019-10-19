@@ -1,6 +1,6 @@
 package dte.masteriot.mdp.emergencies;
 
-class Channel {
+class JSONChannel {
     API_KEYS[] api_keys;
     int id;
     String latitude;
