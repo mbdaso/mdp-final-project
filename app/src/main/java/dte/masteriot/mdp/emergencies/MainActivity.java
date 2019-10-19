@@ -39,7 +39,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import dte.masteriot.mdp.emergencies.MQTTchannel;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -57,35 +56,39 @@ public class MainActivity extends AppCompatActivity {
   //  LatLng coor;
    // String auxcoor;
     Integer pos=0;
-    int numEmergencies = 0;
+
 
     //MQTT variables
-    List<MQTTchannel> MQTTchannels;
+    List<MqttChannel> mqttChannels;
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
     final String serverUri = "tcp://mqtt.thingspeak.com:1883";
-    String clientId = "Emergencies_collector";
-    Channels[] channels;
+    String clientId = "Emergencies_collector1";
+    Channel[] channels;
+    boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     MqttAndroidClient mqttAndroidClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
-        text =  (TextView) findViewById(R.id.textView);
-        text.setText("Number of Emergencies: " + numEmergencies);
+        text = findViewById(R.id.textView);
+        text.setText("Number of Emergencies: 0");
         im = findViewById(R.id.imageView);
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image greater
 
         DownloadWebPageTask task1 = new DownloadWebPageTask(), task2 = new DownloadWebPageTask();
         task1.execute( URL_CAMERAS );
 
-        MQTTchannels = new ArrayList<>();
-        channels = new Channels[4];
-
+        mqttChannels = new ArrayList<>();
+        channels = new Channel[4];
         final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
         task2.execute( URL_CHANNELS_JSON);
+    }
 
+   
+
+    void connectToMQTTChannels(){
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -94,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
                 if (reconnect) {
                     addToHistory("Reconnected to : " + serverURI);
                     // Because Clean Session is true, we need to re-subscribe
-                    subscribeToTopic();
+                    subscribeToTopics();
                 } else {
                     addToHistory("Connected to: " + serverURI);
                 }
@@ -106,14 +109,26 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                addToHistory("Incoming message: " + new String(message.getPayload()));
+            public void messageArrived(String topic, MqttMessage message){
+                String payload = new String(message.getPayload());
+                addToHistory("Incoming message: " + payload);
+
+                int i = 0;
+                for(MqttChannel mqttChannel : mqttChannels){
+                    if(mqttChannel.subscriptionTopic.equals(topic)){
+                        updateEmergencies(i, Double.valueOf(payload) >= 100);
+                        break;
+                    }
+                    i++;
+
+                }
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
             }
         });
+        
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
         // mqttConnectOptions.setCleanSession(false);
@@ -123,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         mqttConnectOptions.setPassword( MQTTAPIKey.toCharArray() );
 
         try {
-            //addToHistory("Connecting to " + serverUri);
+            addToHistory("Connecting to " + serverUri);
             mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
@@ -133,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    subscribeToTopic();
+                    subscribeToTopics();
                 }
 
                 @Override
@@ -146,43 +161,49 @@ public class MainActivity extends AppCompatActivity {
         } catch (MqttException ex){
             ex.printStackTrace();
         }
-
     }
-
+    
     private void addToHistory(String mainText){
         System.out.println("LOG: " + mainText);
     }
 
-    public void subscribeToTopic(){
-        for (MQTTchannel channel : MQTTchannels) {
+    public void subscribeToTopics(){
+        String[] topics = new String[mqttChannels.size()];
+        int[] QoS;
+        QoS = new int[]{0, 0, 0, 0};
+        int i = 0;
+        for (MqttChannel channel : mqttChannels) {
+            topics[i] = channel.subscriptionTopic;
+            i++;
+        }
             try {
-                mqttAndroidClient.subscribe(channel.subscriptionTopic, 0, null, new IMqttActionListener() {
+                mqttAndroidClient.subscribe(topics, QoS, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        addToHistory("Subscribed!");
+                        addToHistory("Subscribed to " + asyncActionToken.getTopics().length + " topics!");
                     }
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                         addToHistory("Failed to subscribe");
                     }
+
                 });
-
-
-                // THIS DOES NOT WORK!
-//            mqttAndroidClient.subscribe(subscriptionTopic, 0, new IMqttMessageListener() {
-//                @Override
-//                public void messageArrived(String topic, MqttMessage message) throws Exception {
-//                    // message Arrived!
-//                    System.out.println("Message: " + topic + " : " + new String(message.getPayload()));
-//                }
-//            });
 
             } catch (MqttException ex) {
                 System.err.println("Exception whilst subscribing");
                 ex.printStackTrace();
             }
         }
+
+    void updateEmergencies(int nTopic, boolean emergency){
+        firedEmer[nTopic] = emergency;
+        int numEmergencies = 0;
+        for (int i = 0; i<4; i++) {
+            numEmergencies += firedEmer[i] ? 1 : 0;
+        }
+        text.setText(String.format("Number of Emergencies: %d", numEmergencies));
+
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
@@ -195,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... urls) {
             String response = "";
 
-            HttpURLConnection urlConnection = null;
+            HttpURLConnection urlConnection;
             try {
                 URL url = new URL( urls[0] );
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -210,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
                     String aux;
                     int eventType = parser.getEventType();
                     while (eventType != XmlPullParser.END_DOCUMENT) {
-                        String elementName = null;
+                        String elementName;
                         elementName = parser.getName();
                         switch (eventType) {
                             case XmlPullParser.START_TAG:
@@ -235,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
                                     String coorURL = parser.nextText();
                                     String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
                                     String lon = coorURL.substring(0, coorURL.indexOf(","));
-                                    coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(), Double.valueOf(lon).doubleValue()));
+                                    coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat), Double.valueOf(lon)));
 
                                 }
                                 break;
@@ -243,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
                         eventType = parser.next();
                     }
                 } else if (contentType.contains("json")){
-                    channels = gson.fromJson(new InputStreamReader(is), Channels[].class);
+                    channels = gson.fromJson(new InputStreamReader(is), Channel[].class);
                     response = "GSON PARSED";
                 }
             } catch (Exception e) {
@@ -277,12 +298,13 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }else if(contentType.contains("json")) {
-                for (int i = 0; i < 4; i++) {
-                    String write_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[0].api_key : channels[i].api_keys[1].api_key;
-                    String read_api_key = channels[i].api_keys[0].write_flag ? channels[i].api_keys[1].api_key : channels[i].api_keys[0].api_key;
-                    LatLng position = new LatLng(Double.valueOf(channels[i].latitude), Double.valueOf(channels[i].longitude));
-                    MQTTchannels.add(new MQTTchannel(Integer.toString(channels[i].id), position, write_api_key, read_api_key));
+                for (Channel channel : channels) {
+                    String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
+                    String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
+                    LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
+                    mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key));
                 }
+                connectToMQTTChannels();
             }
         }
     }
@@ -304,8 +326,7 @@ public class MainActivity extends AppCompatActivity {
             // TODO Auto-generated method stub
             Log.i("doInBackground" , "Entra en doInBackground");
             String url = params[0];
-            Bitmap imagen = descargarImagen(url);
-            return imagen;
+            return descargarImagen(url);
         }
 
         @Override
@@ -326,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         private Bitmap descargarImagen (String imageHttpAddress){
-            URL imageUrl = null;
+            URL imageUrl;
             Bitmap imagen = null;
             try{
                 imageUrl = new URL(imageHttpAddress);
