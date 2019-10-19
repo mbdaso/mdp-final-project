@@ -39,22 +39,23 @@ public class MainActivity extends AppCompatActivity {
 
     ListView lv;
     XmlPullParserFactory parserFactory;
-   // ArrayAdapter adaptador;
+
     private ImageView im;
-  //  LatLng coor;
-   // String auxcoor;
-    Integer pos=0;
+
+    int pos=0;
     int numEmergencies = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
+        //It gets the UI elements of the main activity
         text =  (TextView) findViewById(R.id.textView);
         text.setText("Number of Emergencies: "+numEmergencies);
         im = findViewById(R.id.imageView);
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
 
+        //It downloads the camera list from the predefined URL
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
 
@@ -91,16 +92,15 @@ public class MainActivity extends AppCompatActivity {
                                 cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
                                 cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
                                 camerasURLS_ArrayList.add(cameraURL);
-                                response+=cameraURL + "\n";
+                             //   response+=cameraURL + "\n";
                             } else if ("Data".equals(elementName)) {
                                 aux=parser.getAttributeValue(null,"name");
-                             //   Log.v("EEEEE", aux );
                                 if (aux.equals("Nombre")){
-                                    String aux1;
+                                    String name;
                                     parser.nextTag();
-                                    aux1=parser.nextText();
-                                    Log.v("aux1", aux1);
-                                    nameURLS_ArrayList.add(aux1);
+                                    name=parser.nextText();
+                                    Log.v("aux1", name);
+                                    nameURLS_ArrayList.add(name);
                                 }
 
                             }else if("coordinates".equals(elementName)){
@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
                     String str=(String)o;//As you are using Default String Adapter
                     Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
                     pos=position;
-                    CargaImagenes task = new CargaImagenes();
+                    ImageLoader task = new ImageLoader();
                     task.execute( camerasURLS_ArrayList.get(position) );
 
                 }
@@ -147,9 +147,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class CargaImagenes extends AsyncTask<String, Void, Bitmap>{
+    class ImageLoader extends AsyncTask<String, Void, Bitmap>{
 
-        ProgressDialog pDialog;
+      //  ProgressDialog pDialog;
 
         @Override
         protected void onPreExecute() {
@@ -162,9 +162,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Bitmap doInBackground(String... params) {
             // TODO Auto-generated method stub
-            Log.i("doInBackground" , "Entra en doInBackground");
+
             String url = params[0];
-            Bitmap imagen = descargarImagen(url);
+            //Bitmap imagen = descargarImagen(url);
+
+            URL imageUrl = null;
+            Bitmap imagen = null;
+            try{
+                imageUrl = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
+                conn.connect();
+                imagen = BitmapFactory.decodeStream(conn.getInputStream());
+            }catch(IOException ex){
+                ex.printStackTrace();
+            }
+
             return imagen;
         }
 
@@ -185,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
-        private Bitmap descargarImagen (String imageHttpAddress){
+     /*   private Bitmap descargarImagen (String imageHttpAddress){
             URL imageUrl = null;
             Bitmap imagen = null;
             try{
@@ -198,6 +210,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             return imagen;
-        }
+        }*/
     }
 }
