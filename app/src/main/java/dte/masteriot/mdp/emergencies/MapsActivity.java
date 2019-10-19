@@ -33,7 +33,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Marker camMarker, currPositionMarker;
     LatLng currPosition;
     private String TAG = "MapsActivity";
-
+    double valCont;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
 
@@ -55,6 +55,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
         cameraName = parametros.getString("cameraName");
+        valCont = parametros.getDouble("valCont");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
     }
@@ -189,9 +190,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onSuccess(Location location) {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
+
                             // Logic to handle location object
-                           currPos = new LatLng(location.getLatitude(), location.getLongitude());
-                            camMarker = mMap.addMarker(new MarkerOptions().position(datos).title(cameraName));
+                            currPos = new LatLng(location.getLatitude(), location.getLongitude());
+                            if(valCont == -1)
+                                camMarker = mMap.addMarker(new MarkerOptions().position(datos).title(cameraName)
+                                        .snippet("Not measured"));
+                            else
+                                camMarker = mMap.addMarker(new MarkerOptions().position(datos).title(cameraName)
+                                        .snippet(String.format("Last measured value: %ld NO2 µg/m3", valCont)));
+
                             //FALTA CAMBIAR EL COLOR A NARANJA
                             currPositionMarker = mMap.addMarker(new MarkerOptions().position(currPos).title("CURRENT POSITION"));
                             if (currPos.latitude < datos.latitude) {

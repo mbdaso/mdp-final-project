@@ -44,10 +44,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
+    List<Camera> cameraArrayList = new ArrayList<Camera>();
 
-    ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
-    ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
-    ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
 
     ListView lv;
     XmlPullParserFactory parserFactory;
@@ -59,14 +57,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     //MQTT variables
-    List<MqttChannel> mqttChannels;
+    List<MqttChannel> mqttChannels = new ArrayList<>();
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
     final String serverUri = "tcp://mqtt.thingspeak.com:1883";
     final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
 
     String clientId = "Emergencies_collector1";
-    JSONChannel[] channels;
+    JSONChannel[] channels = new JSONChannel[4];
     boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     MqttAndroidClient mqttAndroidClient;
 
@@ -81,9 +79,6 @@ public class MainActivity extends AppCompatActivity {
 
         DownloadWebPageTask task1 = new DownloadWebPageTask(), task2 = new DownloadWebPageTask();
         task1.execute( URL_CAMERAS );
-
-        mqttChannels = new ArrayList<>();
-        channels = new JSONChannel[4];
     }
 
    
@@ -112,15 +107,14 @@ public class MainActivity extends AppCompatActivity {
             public void messageArrived(String topic, MqttMessage message){
                 String payload = new String(message.getPayload());
                 addToHistory("Incoming message: " + payload);
-
                 int i = 0;
                 for(MqttChannel mqttChannel : mqttChannels){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
                         updateEmergencies(i, Double.valueOf(payload) >= 100);
+                        cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Integer.valueOf(payload)); //Set cont value
                         break;
                     }
                     i++;
-
                 }
             }
 
@@ -203,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
             numEmergencies += firedEmer[i] ? 1 : 0;
         }
         text.setText(String.format("Number of Emergencies: %d", numEmergencies));
+
         // TODO add list modifier (putting background in red)
 
     }
@@ -211,7 +206,9 @@ public class MainActivity extends AppCompatActivity {
 
         private String contentType = "";
         Gson gson = new Gson();
-
+        ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
+        ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
+        ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
         @Override
         @SuppressWarnings( "deprecation" )
         protected String doInBackground(String... urls) {
@@ -264,6 +261,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                         eventType = parser.next();
                     }
+                    for (int i = 0; i< nameURLS_ArrayList.size(); i++) {
+                        cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
+                    }
                 } else if (contentType.contains("json")){
                     channels = gson.fromJson(new InputStreamReader(is), JSONChannel[].class);
                     response = "GSON PARSED";
@@ -306,9 +306,16 @@ public class MainActivity extends AppCompatActivity {
                     String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
                     String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
                     LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
-                    mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key));
+                    int storePos =  100000;
+                    //Calculate nearest camera and store its index
+                    for (int i = 0; i < cameraArrayList.size(); i++) {
+                        double distance = Math.pow(position.latitude - cameraArrayList.get(i).position.latitude, 2) + Math.pow(position.longitude - cameraArrayList.get(i).position.longitude, 2);
+                        if (distance < storePos) storePos = i;
+                    }
+                    mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
 
                 }
+
                 connectToMQTTChannels();
             }
         }
@@ -342,8 +349,9 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v){
                     Intent intent = new Intent (v.getContext(), MapsActivity.class);
                     Bundle args = new Bundle();
-                    args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
-                    args.putString("cameraName", nameURLS_ArrayList.get(pos));
+                    args.putParcelable("coordinates", cameraArrayList.get(pos).position);
+                    args.putString("cameraName", cameraArrayList.get(pos).name);
+                    args.putDouble("valCont", cameraArrayList.get(pos).valCont);
                     intent.putExtra("bundle",args);
                     startActivity(intent);
                 }

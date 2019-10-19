@@ -7,10 +7,12 @@ class MqttChannel {
     LatLng position;
     String publishTopic;
     String subscriptionTopic;
-
-    MqttChannel(String channel_number, LatLng position0, String publishAPIkey, String subscriberAPIkey){
+    int associatedCamera;
+    MqttChannel(String channel_number, LatLng position, String publishAPIkey, String subscriberAPIkey, int associatedCamera){
         publishTopic =  "channels/" + channel_number + "/publish/fields/field1/" + publishAPIkey;
         subscriptionTopic =  "channels/" + channel_number + "/subscribe/fields/field1/" + subscriberAPIkey;
-        position = position0;
+        this.position = position;
+        this.associatedCamera = associatedCamera;
     }
+
 }
