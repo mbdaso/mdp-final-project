@@ -2,7 +2,9 @@ package dte.masteriot.mdp.emergencies;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -27,7 +29,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -53,6 +63,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Bundle args;
 
+    private YOURSRoute yoursRoute = new YOURSRoute();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,9 +75,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         //Obtains arguments in bundle
-        Bundle params = this.getIntent().getParcelableExtra("bundle");
-        camPos = (LatLng) params.getParcelable("coordinates");
-        cameraName = params.getString("cameraName");
+        args = this.getIntent().getParcelableExtra("bundle");
+        camPos = (LatLng) args.getParcelable("coordinates");
+        cameraName = args.getString("cameraName");
         //Handles location object
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         locationCallback = new LocationCallback() {
@@ -77,6 +89,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mCurrentLocation = locationResult.getLastLocation();
                 currPos = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
                 addCurrPosMarker(currPos);
+                setMapBounds(currPos, camPos);
+                drawMapRoute(currPos, camPos);
                 fusedLocationClient.removeLocationUpdates(locationCallback);
             }
 
@@ -273,13 +287,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             // Logic to handle location object
                             currPos = new LatLng(location.getLatitude(), location.getLongitude());
                             addCurrPosMarker(currPos);
+                            setMapBounds(currPos, camPos);
+                            drawMapRoute(currPos, camPos);
 
-                            if (currPos.latitude < camPos.latitude) {
-                                bounds = new LatLngBounds(currPos, camPos);
-                            } else {
-                                bounds = new LatLngBounds(currPos, camPos);
-                            }
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
                         } else {
                             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
                         }
@@ -297,4 +307,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    public void setMapBounds(LatLng currPos, LatLng camPos){
+        if (currPos.latitude < camPos.latitude) {
+            bounds = new LatLngBounds(currPos, camPos);
+        } else {
+            bounds = new LatLngBounds(currPos, camPos);
+        }
+        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
+
+    }
+
+    public void drawMapRoute(LatLng source, LatLng dest){
+        //Pintamos la ruta
+
+        MapRouteTask task = new MapRouteTask();
+        task.execute(source, dest);
+
+    }
+    private class MapRouteTask extends AsyncTask<LatLng, Void, List<LatLng>> {
+        @Override
+        @SuppressWarnings( "deprecation" )
+        protected List<LatLng> doInBackground(LatLng ... srcdst) {
+            LatLng src = srcdst[0];
+            LatLng dst = srcdst[1];
+            List<LatLng> route;
+            try {
+                URL apiURL = yoursRoute.buildRouteURL(src, dst);
+                HttpURLConnection urlConnection = (HttpURLConnection) apiURL.openConnection();
+                InputStream is = urlConnection.getInputStream();
+                route = yoursRoute.getRouteFromXML(is);
+            }
+            catch(Exception e){
+                Log.d(TAG, "MapRouteTask: " + e. getMessage());
+                route = Arrays.asList();
+            }
+            return route;
+        }
+
+        @Override
+        protected void onPostExecute(List<LatLng> route) {
+
+            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+            for(LatLng point: route){
+                options.add(point);
+            }
+
+            Polyline line = mMap.addPolyline(options);
+            Log.d(TAG, "Ruta pintada " + route.get(0) + "hasta " + route.get(route.size() - 1));
+        }
+    }
 }
