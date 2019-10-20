@@ -338,7 +338,6 @@ public class MainActivity extends AppCompatActivity {
             // TODO Auto-generated method stub
 
             String url = params[0];
-            return descargarImagen(url);
             //Bitmap imagen = descargarImagen(url);
 
             URL imageUrl = null;
