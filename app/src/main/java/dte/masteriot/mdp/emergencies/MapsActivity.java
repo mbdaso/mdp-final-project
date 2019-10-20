@@ -288,7 +288,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
-    
+
     public void getCurrentLocation(){
         requestingLocationUpdates = true;
         fusedLocationClient.getLastLocation()
