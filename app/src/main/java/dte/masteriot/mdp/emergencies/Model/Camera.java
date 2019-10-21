@@ -7,7 +7,7 @@ public class Camera {
     public String name;
     public LatLng position;
     public double valCont = -1;
-    public void setValCont (int valCont){
+    public void setValCont (double valCont){
         this.valCont = valCont;
     }
     public Camera(String name, String URL, LatLng position){

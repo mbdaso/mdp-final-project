@@ -1,10 +1,12 @@
 package dte.masteriot.mdp.emergencies.Adapters;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,9 +20,9 @@ public class CameraArrayAdapter extends ArrayAdapter {
     private ArrayList<Camera> items;
     private Context mContext;
 
-    public CameraArrayAdapter(Context context, ArrayList<Camera> countries) {
-        super(context, 0, countries);
-        items = countries;
+    public CameraArrayAdapter(Context context, ArrayList<Camera> cameras) {
+        super(context, 0, cameras);
+        items = cameras;
         mContext = context;
     }
 
@@ -37,15 +39,22 @@ public class CameraArrayAdapter extends ArrayAdapter {
         }
         //-----
 
-        TextView textView = (TextView) newView.findViewById(R.id.listElemName);
-        //TextView poptextView = (TextView) newView.findViewById(R.id.countPopView);
-        //ImageView imageView = (ImageView) newView.findViewById(R.id.imgCountry);
+        CheckedTextView textView = (CheckedTextView) newView.findViewById(R.id.listOfCameras);
+
 
         Camera camera = items.get(position);
 
         textView.setText(camera.name);
-        //poptextView.setText(camera.getPopulation());
-        //imageView.setImageResource(camera.getImageResource());
+        if(camera.valCont >= 100)
+        {
+            // Set a background color for ListView regular row/item
+            newView.setBackgroundColor(Color.RED);
+        }
+        else
+        {
+            // Set the background color for alternate row/item
+            newView.setBackgroundColor(Color.WHITE);
+        }
 
         return newView;
     }
