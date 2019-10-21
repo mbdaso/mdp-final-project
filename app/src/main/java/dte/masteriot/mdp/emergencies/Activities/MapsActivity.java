@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies;
+package dte.masteriot.mdp.emergencies.Activities;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -37,6 +37,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+
+import dte.masteriot.mdp.emergencies.Model.YOURSRoute;
+import dte.masteriot.mdp.emergencies.R;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -144,7 +147,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .snippet("Not measured"));
         else
             camMarker = mMap.addMarker(new MarkerOptions().position(camPos).title(cameraName)
-                    .snippet(String.format("Last measured value: %ld NO2 µg/m3", valCont)));
+                    .snippet("Last measured value:" + valCont + "NO2 µg/m3" ));
         camMarker.showInfoWindow();
     }
 

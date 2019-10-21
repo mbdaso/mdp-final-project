@@ -1,6 +1,5 @@
-package dte.masteriot.mdp.emergencies;
+package dte.masteriot.mdp.emergencies.Activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -40,20 +39,26 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
+import dte.masteriot.mdp.emergencies.Model.Camera;
+import dte.masteriot.mdp.emergencies.Model.JSONChannel;
+import dte.masteriot.mdp.emergencies.Model.MqttChannel;
+import dte.masteriot.mdp.emergencies.R;
+
 public class MainActivity extends AppCompatActivity {
 
     //URL from which the list of cameras will be retrieved
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
-    List<Camera> cameraArrayList = new ArrayList<Camera>();
+    ArrayList<Camera> cameraArrayList = new ArrayList<Camera>();
 
 
     ListView lv;
+    CameraArrayAdapter cameraAdapter;
     XmlPullParserFactory parserFactory;
 
     private ImageView im;
 
-    int pos=0;
 
 
     //MQTT variables
@@ -113,7 +118,8 @@ public class MainActivity extends AppCompatActivity {
                 for(MqttChannel mqttChannel : mqttChannels){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
                         updateEmergencies(i, Double.valueOf(payload) >= 100);
-                        cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Integer.valueOf(payload)); //Set cont value
+                        cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Double.valueOf(payload)); //Set cont value
+                        cameraAdapter.notifyDataSetChanged();
                         break;
                     }
                     i++;
@@ -281,22 +287,20 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             if (contentType.contains("xml")) {
                 lv = (ListView) findViewById(R.id.lv);
-                ArrayAdapter arrayAdapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
-                lv.setAdapter(arrayAdapter);
+                cameraAdapter = new CameraArrayAdapter(MainActivity.this, cameraArrayList);
+                lv.setAdapter(cameraAdapter);
 
                 lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-
                 lv.setClickable(true);
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
                     @Override
                     public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                        Object o = lv.getItemAtPosition(position);
-                        String str = (String) o;//As you are using Default String Adapter
+                        Camera o = (Camera) lv.getItemAtPosition(position);
+                        String str = o.name;//As you are using Default String Adapter
                         Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
-                        pos = position;
                         ImageLoader task = new ImageLoader();
-                        task.execute(camerasURLS_ArrayList.get(position));
+                        task.execute(position);
 
                     }
                 });
@@ -308,11 +312,23 @@ public class MainActivity extends AppCompatActivity {
                     String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
                     String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
                     LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
-                    int storePos =  100000;
+                    int storePos =  0;
+                    double min_distance = 1000000;
                     //Calculate nearest camera and store its index
                     for (int i = 0; i < cameraArrayList.size(); i++) {
-                        double distance = Math.pow(position.latitude - cameraArrayList.get(i).position.latitude, 2) + Math.pow(position.longitude - cameraArrayList.get(i).position.longitude, 2);
-                        if (distance < storePos) storePos = i;
+
+                         /* * * * * * * * * * * * * * * * * * * * * * * *
+                        * For measuring distance we consider in madrid: *
+                        *           1 latitude degree -> 111km          *
+                        *           1 longitude degree -> 85km          *
+                        * * * * * * * * * * * * * * * * * * * * * * * * */
+
+                        double distance = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude)*111, 2)
+                                + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude)*85, 2);
+                        if (distance < min_distance){
+                            min_distance = distance;
+                            storePos = i;
+                        }
                     }
                     mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
 
@@ -323,8 +339,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class ImageLoader extends AsyncTask<String, Void, Bitmap>{
-
+    class ImageLoader extends AsyncTask<Integer, Void, Bitmap>{
+        int pos;
       //  ProgressDialog pDialog;
 
         @Override
@@ -334,10 +350,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Bitmap doInBackground(String... params) {
+        protected Bitmap doInBackground(Integer... params) {
             // TODO Auto-generated method stub
-
-            String url = params[0];
+            pos = params[0];
+            String url = cameraArrayList.get(pos).URL;
             //Bitmap imagen = descargarImagen(url);
 
             URL imageUrl = null;

@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies;
+package dte.masteriot.mdp.emergencies.Model;
 
 import android.os.AsyncTask;
 import android.util.Log;
