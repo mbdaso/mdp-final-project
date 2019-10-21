@@ -316,7 +316,15 @@ public class MainActivity extends AppCompatActivity {
                     double min_distance = 1000000;
                     //Calculate nearest camera and store its index
                     for (int i = 0; i < cameraArrayList.size(); i++) {
-                        double distance = Math.pow(position.latitude - cameraArrayList.get(i).position.latitude, 2) + Math.pow(position.longitude - cameraArrayList.get(i).position.longitude, 2);
+
+                         /* * * * * * * * * * * * * * * * * * * * * * * *
+                        * For measuring distance we consider in madrid: *
+                        *           1 latitude degree -> 111km          *
+                        *           1 longitude degree -> 85km          *
+                        * * * * * * * * * * * * * * * * * * * * * * * * */
+
+                        double distance = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude)*111, 2)
+                                + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude)*85, 2);
                         if (distance < min_distance){
                             min_distance = distance;
                             storePos = i;
