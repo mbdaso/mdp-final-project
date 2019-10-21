@@ -1,6 +1,5 @@
-package dte.masteriot.mdp.emergencies;
+package dte.masteriot.mdp.emergencies.Activities;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -39,6 +38,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
+import dte.masteriot.mdp.emergencies.Model.Camera;
+import dte.masteriot.mdp.emergencies.Model.JSONChannel;
+import dte.masteriot.mdp.emergencies.Model.MqttChannel;
+import dte.masteriot.mdp.emergencies.R;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -285,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
                 lv.setAdapter(arrayAdapter);
 
                 lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-
                 lv.setClickable(true);
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 

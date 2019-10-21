@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies;
+package dte.masteriot.mdp.emergencies.Activities;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -11,7 +11,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.RadioButton;
-import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -38,6 +37,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+
+import dte.masteriot.mdp.emergencies.Model.YOURSRoute;
+import dte.masteriot.mdp.emergencies.R;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
