@@ -11,7 +11,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.RadioButton;
-import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -314,12 +313,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    public void setMapBounds(LatLng currPos, LatLng camPos){
-        if (currPos.latitude < camPos.latitude) {
-            bounds = new LatLngBounds(currPos, camPos);
-        } else {
-            bounds = new LatLngBounds(currPos, camPos);
-        }
+    public void setMapBounds(LatLng p1, LatLng p2){
+        double latP1 = p1.latitude;
+        double latP2 = p2.latitude;
+        double lngP1 = p1.longitude;
+        double lngP2 = p2.longitude;
+        //Northeast point - composed by greatest latitude and greatest longitude
+        double latNE = Math.max(latP1, latP2);
+        double lngNE = Math.max(lngP1, lngP2);
+
+        //Southwest point - composed by smallest latitude and smallest longitude
+        double latSW = Math.min(latP1, latP2);
+        double lngSW = Math.min(lngP1, lngP2);
+
+        LatLng northEast = new LatLng(latNE, lngNE);
+        LatLng southWest = new LatLng(latSW, lngSW);
+        //Bounds constructor is (southWest, northEast)
+        bounds = new LatLngBounds(southWest, northEast);
+
         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
 
     }
