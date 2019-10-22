@@ -1,5 +1,6 @@
 package dte.masteriot.mdp.emergencies.Activities;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,7 +9,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -47,19 +47,15 @@ import dte.masteriot.mdp.emergencies.R;
 
 public class MainActivity extends AppCompatActivity {
 
-    //URL from which the list of cameras will be retrieved
-    private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
-    ArrayList<Camera> cameraArrayList = new ArrayList<Camera>();
+    private ImageView im;
 
-
-    ListView lv;
     CameraArrayAdapter cameraAdapter;
     XmlPullParserFactory parserFactory;
 
-    private ImageView im;
-
-
+    //Camera variables
+    private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
+    ArrayList<Camera> cameraArrayList = new ArrayList<>();
 
     //MQTT variables
     List<MqttChannel> mqttChannels = new ArrayList<>();
@@ -68,11 +64,10 @@ public class MainActivity extends AppCompatActivity {
     final String serverUri = "tcp://mqtt.thingspeak.com:1883";
     final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
 
-    String clientId = "Emergencies_collector1";
-    JSONChannel[] channels = new JSONChannel[4];
     boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     MqttAndroidClient mqttAndroidClient;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,13 +79,15 @@ public class MainActivity extends AppCompatActivity {
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
 
         //It downloads the camera list from the predefined URL
-        DownloadWebPageTask task1 = new DownloadWebPageTask(), task2 = new DownloadWebPageTask();
+        DownloadWebPageTask task1 = new DownloadWebPageTask();
         task1.execute( URL_CAMERAS );
     }
 
 
 
     void connectToMQTTChannels(){
+        String clientId = "Emergencies_collector";
+
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -198,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+    @SuppressLint("DefaultLocale")
     void updateEmergencies(int nTopic, boolean emergency){
         firedEmer[nTopic] = emergency;
         int numEmergencies = 0;
@@ -205,24 +203,21 @@ public class MainActivity extends AppCompatActivity {
             numEmergencies += firedEmer[i] ? 1 : 0;
         }
         text.setText(String.format("Number of Emergencies: %d", numEmergencies));
-
-        // TODO add list modifier (putting background in red)
-
     }
 
-    private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
+    @SuppressLint("StaticFieldLeak")
+    private class DownloadWebPageTask extends AsyncTask<String, Void, Void> {
 
         private String contentType = "";
         Gson gson = new Gson();
+        JSONChannel[] channels = new JSONChannel[4];
         ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
         ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
         ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
         @Override
-        @SuppressWarnings( "deprecation" )
-        protected String doInBackground(String... urls) {
-            String response = "";
-
+        protected Void doInBackground(String... urls) {
             HttpURLConnection urlConnection;
+
             try {
                 URL url = new URL( urls[0] );
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -235,21 +230,20 @@ public class MainActivity extends AppCompatActivity {
                     parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
                     parser.setInput(is, null);
                     String aux;
+
                     int eventType = parser.getEventType();
                     while (eventType != XmlPullParser.END_DOCUMENT) {
                         String elementName;
                         elementName = parser.getName();
-                        switch (eventType) {
-                            case XmlPullParser.START_TAG:
+                        if (eventType == XmlPullParser.START_TAG) {
                                 if ("description".equals(elementName)) {
                                     String cameraURL = parser.nextText();
                                     cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
                                     cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
                                     camerasURLS_ArrayList.add(cameraURL);
-                                 //   response += cameraURL + "\n";
+
                                 } else if ("Data".equals(elementName)) {
                                     aux = parser.getAttributeValue(null, "name");
-
                                     if (aux.equals("Nombre")) {
                                         String name;
                                         parser.nextTag();
@@ -263,9 +257,7 @@ public class MainActivity extends AppCompatActivity {
                                     String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
                                     String lon = coorURL.substring(0, coorURL.indexOf(","));
                                     coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat), Double.valueOf(lon)));
-
                                 }
-                                break;
                         }
                         eventType = parser.next();
                     }
@@ -274,19 +266,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if (contentType.contains("json")){
                     channels = gson.fromJson(new InputStreamReader(is), JSONChannel[].class);
-                    response = "GSON PARSED";
+                    System.out.println("GSON PARSED");
                 }
             } catch (Exception e) {
-                response = e.toString();
+                System.err.println(e.toString());
             }
-
-            return response;
+            return null;
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(Void voids) {
+            final ListView lv;
+
             if (contentType.contains("xml")) {
-                lv = (ListView) findViewById(R.id.lv);
+                lv = findViewById(R.id.lv);
                 cameraAdapter = new CameraArrayAdapter(MainActivity.this, cameraArrayList);
                 lv.setAdapter(cameraAdapter);
 
@@ -301,7 +294,6 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
                         ImageLoader task = new ImageLoader();
                         task.execute(position);
-
                     }
                 });
                 DownloadWebPageTask task1 = new DownloadWebPageTask();
@@ -316,13 +308,11 @@ public class MainActivity extends AppCompatActivity {
                     double min_distance = 1000000;
                     //Calculate nearest camera and store its index
                     for (int i = 0; i < cameraArrayList.size(); i++) {
-
                          /* * * * * * * * * * * * * * * * * * * * * * * *
                         * For measuring distance we consider in madrid: *
                         *           1 latitude degree -> 111km          *
                         *           1 longitude degree -> 85km          *
                         * * * * * * * * * * * * * * * * * * * * * * * * */
-
                         double distance = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude)*111, 2)
                                 + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude)*85, 2);
                         if (distance < min_distance){
@@ -331,32 +321,22 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
-
                 }
-
                 connectToMQTTChannels();
             }
         }
     }
 
-    class ImageLoader extends AsyncTask<Integer, Void, Bitmap>{
+    @SuppressLint("StaticFieldLeak")
+    private class ImageLoader extends AsyncTask<Integer, Void, Bitmap>{
         int pos;
-      //  ProgressDialog pDialog;
-
-        @Override
-        protected void onPreExecute() {
-            // TODO Auto-generated method stub
-            super.onPreExecute();
-        }
 
         @Override
         protected Bitmap doInBackground(Integer... params) {
-            // TODO Auto-generated method stub
             pos = params[0];
             String url = cameraArrayList.get(pos).URL;
-            //Bitmap imagen = descargarImagen(url);
 
-            URL imageUrl = null;
+            URL imageUrl;
             Bitmap imagen = null;
             try{
                 imageUrl = new URL(url);
@@ -372,9 +352,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Bitmap result) {
-            // TODO Auto-generated method stub
-            super.onPostExecute(result);
-            ImageView im = (ImageView)((AppCompatActivity) MainActivity.this).findViewById(R.id.imageView);
             im.setImageBitmap(result);
             im.setOnClickListener( new View.OnClickListener(){
                 public void onClick(View v){
@@ -388,19 +365,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
-     /*   private Bitmap descargarImagen (String imageHttpAddress){
-            URL imageUrl;
-            Bitmap imagen = null;
-            try{
-                imageUrl = new URL(imageHttpAddress);
-                HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
-                conn.connect();
-                imagen = BitmapFactory.decodeStream(conn.getInputStream());
-            }catch(IOException ex){
-                ex.printStackTrace();
-            }
-
-            return imagen;
-        }*/
     }
 }
