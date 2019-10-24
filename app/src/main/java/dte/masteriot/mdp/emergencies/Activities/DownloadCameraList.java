@@ -88,6 +88,7 @@ public DownloadCameraList(MainActivity mainActivity){
     @Override
     protected void onPostExecute(Void voids) {
         mainActivity.setCameraArrayList(cameraArrayList);
-        mainActivity.paintCameraList();
+        mainActivity.printCameraList();
+        mainActivity.downloadJSONChannels();
     }
 }
