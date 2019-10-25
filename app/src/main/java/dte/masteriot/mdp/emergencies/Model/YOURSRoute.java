@@ -1,6 +1,6 @@
 package dte.masteriot.mdp.emergencies.Model;
 
-import android.os.AsyncTask;
+
 import android.util.Log;
 import com.google.android.gms.maps.model.LatLng;
 
@@ -8,16 +8,12 @@ import com.google.android.gms.maps.model.LatLng;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /* Cuando se abre el mapa, se solicita la ruta desde currentPosition a la cámara que se ha
@@ -68,18 +64,11 @@ lang = specifies the language code in which the routing directions are returned.
     * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&
     flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
     * */
-
-    public String addURLKeyValue(String url, String key, String value){
-        String separator = url.endsWith("?") ? "" : "&";
-        return url + separator + key + "=" + value;
-    }
-
-
     /*Esta url va bien
      * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&%20flat=40.452162&flon=-3.725778&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
      * */
 
-    public URL buildRouteURL(LatLng source, LatLng dest)
+    private URL buildRouteURL(LatLng source, LatLng dest)
             throws UnsupportedEncodingException, MalformedURLException {
         //TODO: Por qué los parámetros longitud, latitud van al revés?
         URL builtURL;
@@ -98,7 +87,7 @@ lang = specifies the language code in which the routing directions are returned.
         return builtURL;
     }
 
-    public ArrayList<LatLng> getRouteFromXML(InputStream is){
+    private ArrayList<LatLng> getRouteFromXML(InputStream is){
         //XMLPullParser
         ArrayList<LatLng> route = new ArrayList<>();
         try {
@@ -148,6 +137,12 @@ lang = specifies the language code in which the routing directions are returned.
             }
         }
         return route;
+    }
+    public List<LatLng> getRoute(LatLng src, LatLng dst) throws java.io.IOException {
+            URL apiURL = buildRouteURL(src, dst);
+            HttpURLConnection urlConnection = (HttpURLConnection) apiURL.openConnection();
+            InputStream is = urlConnection.getInputStream();
+            return getRouteFromXML(is);
     }
 
 }

@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -33,13 +32,8 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Arrays;
 import java.util.List;
 
-import dte.masteriot.mdp.emergencies.Model.YOURSRoute;
 import dte.masteriot.mdp.emergencies.R;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -65,8 +59,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Location mCurrentLocation;
 
     Bundle args;
-
-    private YOURSRoute yoursRoute = new YOURSRoute();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -346,40 +338,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void drawMapRoute(LatLng source, LatLng dest){
         //Pintamos la ruta
 
-        MapRouteTask task = new MapRouteTask();
+        MapRouteTask task = new MapRouteTask(this);
         task.execute(source, dest);
 
     }
-    private class MapRouteTask extends AsyncTask<LatLng, Void, List<LatLng>> {
-        @Override
-        @SuppressWarnings( "deprecation" )
-        protected List<LatLng> doInBackground(LatLng ... srcdst) {
-            LatLng src = srcdst[0];
-            LatLng dst = srcdst[1];
-            List<LatLng> route;
-            try {
-                URL apiURL = yoursRoute.buildRouteURL(src, dst);
-                HttpURLConnection urlConnection = (HttpURLConnection) apiURL.openConnection();
-                InputStream is = urlConnection.getInputStream();
-                route = yoursRoute.getRouteFromXML(is);
-            }
-            catch(Exception e){
-                Log.d(TAG, "MapRouteTask: " + e. getMessage());
-                route = Arrays.asList();
-            }
-            return route;
+
+    public void drawMapRoutePolyline(List<LatLng> route) {
+        PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
+        for(LatLng point: route){
+            options.add(point);
         }
-
-        @Override
-        protected void onPostExecute(List<LatLng> route) {
-
-            PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
-            for(LatLng point: route){
-                options.add(point);
-            }
-
-            Polyline line = mMap.addPolyline(options);
-            Log.d(TAG, "Ruta pintada " + route.get(0) + "hasta " + route.get(route.size() - 1));
-        }
+        Polyline line = mMap.addPolyline(options);
+        Log.d(TAG, "Ruta pintada " + route.get(0) + "hasta " + route.get(route.size() - 1));
     }
 }
