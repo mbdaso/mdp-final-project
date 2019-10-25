@@ -270,8 +270,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case PERMISSION_REQUEST_BOTH_LOCATION:{
 
                 if(length > 0){
-                    for(int i = 0; i < grantResults.length ; i++){
-                        if (grantResults[i] != PackageManager.PERMISSION_GRANTED){
+                    for (int grantResult : grantResults) {
+                        if (grantResult != PackageManager.PERMISSION_GRANTED) {
                             requestingLocationUpdates = false;
                             Log.e(TAG, "User denied some location permissions");
                             return;

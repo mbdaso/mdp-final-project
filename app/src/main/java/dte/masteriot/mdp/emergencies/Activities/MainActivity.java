@@ -1,12 +1,7 @@
 package dte.masteriot.mdp.emergencies.Activities;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
@@ -15,9 +10,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.google.android.gms.maps.model.LatLng;
-import com.google.gson.Gson;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -28,44 +20,33 @@ import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
 import dte.masteriot.mdp.emergencies.Model.Camera;
-import dte.masteriot.mdp.emergencies.Model.JSONChannel;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 import dte.masteriot.mdp.emergencies.R;
 
 public class MainActivity extends AppCompatActivity {
 
     private TextView text;
-    private ImageView im;
 
-    CameraArrayAdapter cameraAdapter;
-    XmlPullParserFactory parserFactory;
+    private CameraArrayAdapter cameraAdapter;
 
     //Camera variables
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
-    ArrayList<Camera> cameraArrayList = new ArrayList<>();
+    private ArrayList<Camera> cameraArrayList;
 
     //MQTT variables
-    List<MqttChannel> mqttChannels = new ArrayList<>();
+    private ArrayList<MqttChannel> mqttChannelArrayList;
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
-    final String serverUri = "tcp://mqtt.thingspeak.com:1883";
-    final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
+    private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
 
-    boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
-    MqttAndroidClient mqttAndroidClient;
+    private int numEmergencies = 0;
+    private boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
+    private MqttAndroidClient mqttAndroidClient;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -74,20 +55,44 @@ public class MainActivity extends AppCompatActivity {
         setContentView( R.layout.activity_main);
         //It gets the UI elements of the main activity
         text = findViewById(R.id.textView);
-        text.setText("Number of Emergencies: 0");
-        im = findViewById(R.id.imageView);
-        im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
-
-        //It downloads the camera list from the predefined URL
-        DownloadWebPageTask task1 = new DownloadWebPageTask();
-        task1.execute( URL_CAMERAS );
+        ImageView im = findViewById(R.id.imageView);
+        if (savedInstanceState != null) {
+            numEmergencies = savedInstanceState.getInt("numEmergencies");
+            cameraArrayList = savedInstanceState.getParcelableArrayList("cameraArrayList");
+            mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
+            printCameraList();
+            connectToMQTTChannels();
+        }else {
+            im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
+            DownloadCameraList task1 = new DownloadCameraList(this);
+            task1.execute( URL_CAMERAS );
+        }
+        text.setText("Number of Emergencies:" + numEmergencies);
     }
 
+    protected void onStart() {
+        super.onStart();
+        //It downloads the camera list from the predefined URL
+    }
+    protected void onStop() {
+        super.onStop();
+        try {
+            mqttAndroidClient.close();
+            mqttAndroidClient.disconnect();
+            addToHistory("Disconnected from " + serverUri + " succesfully");
+        }catch(Exception e){
+            System.err.println(e);
+        }
+    }
 
-
-    void connectToMQTTChannels(){
+    protected void onSaveInstanceState(Bundle outState){
+        outState.putInt("numEmergencies", numEmergencies);
+        outState.putParcelableArrayList("cameraArrayList", cameraArrayList);
+        outState.putParcelableArrayList("mqttChannelArrayList", mqttChannelArrayList);
+        super.onSaveInstanceState(outState);
+    }
+    public void connectToMQTTChannels(){
         String clientId = "Emergencies_collector";
-
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -112,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 String payload = new String(message.getPayload());
                 addToHistory("Incoming message: " + payload);
                 int i = 0;
-                for(MqttChannel mqttChannel : mqttChannels){
+                for(MqttChannel mqttChannel : mqttChannelArrayList){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
                         updateEmergencies(i, Double.valueOf(payload) >= 100);
                         cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Double.valueOf(payload)); //Set cont value
@@ -130,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
 
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
-        // mqttConnectOptions.setCleanSession(false);
         mqttConnectOptions.setCleanSession(true);
 
         mqttConnectOptions.setUserName( "Emergencies_Collector" );
@@ -167,11 +171,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void subscribeToTopics(){
-        String[] topics = new String[mqttChannels.size()];
+        String[] topics = new String[mqttChannelArrayList.size()];
         int[] QoS;
         QoS = new int[]{0, 0, 0, 0};
         int i = 0;
-        for (MqttChannel channel : mqttChannels) {
+        for (MqttChannel channel : mqttChannelArrayList) {
             topics[i] = channel.subscriptionTopic;
             i++;
         }
@@ -198,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("DefaultLocale")
     void updateEmergencies(int nTopic, boolean emergency){
         firedEmer[nTopic] = emergency;
-        int numEmergencies = 0;
+        numEmergencies = 0;
         for (int i = 0; i<4; i++) {
             numEmergencies += firedEmer[i] ? 1 : 0;
         }
@@ -206,164 +210,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("StaticFieldLeak")
-    private class DownloadWebPageTask extends AsyncTask<String, Void, Void> {
-
-        private String contentType = "";
-        Gson gson = new Gson();
-        JSONChannel[] channels = new JSONChannel[4];
-        ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
-        ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
-        ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
-        @Override
-        protected Void doInBackground(String... urls) {
-            HttpURLConnection urlConnection;
-
-            try {
-                URL url = new URL( urls[0] );
-                urlConnection = (HttpURLConnection) url.openConnection();
-                contentType = urlConnection.getContentType();
-                InputStream is = urlConnection.getInputStream();
-                if(contentType.contains("xml")) {
-                    parserFactory = XmlPullParserFactory.newInstance();
-
-                    XmlPullParser parser = parserFactory.newPullParser();
-                    parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-                    parser.setInput(is, null);
-                    String aux;
-
-                    int eventType = parser.getEventType();
-                    while (eventType != XmlPullParser.END_DOCUMENT) {
-                        String elementName;
-                        elementName = parser.getName();
-                        if (eventType == XmlPullParser.START_TAG) {
-                                if ("description".equals(elementName)) {
-                                    String cameraURL = parser.nextText();
-                                    cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
-                                    cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
-                                    camerasURLS_ArrayList.add(cameraURL);
-
-                                } else if ("Data".equals(elementName)) {
-                                    aux = parser.getAttributeValue(null, "name");
-                                    if (aux.equals("Nombre")) {
-                                        String name;
-                                        parser.nextTag();
-                                        name = parser.nextText();
-                                        Log.v("aux1", name);
-                                        nameURLS_ArrayList.add(name);
-                                    }
-
-                                } else if ("coordinates".equals(elementName)) {
-                                    String coorURL = parser.nextText();
-                                    String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
-                                    String lon = coorURL.substring(0, coorURL.indexOf(","));
-                                    coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat), Double.valueOf(lon)));
-                                }
-                        }
-                        eventType = parser.next();
-                    }
-                    for (int i = 0; i< nameURLS_ArrayList.size(); i++) {
-                        cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
-                    }
-                } else if (contentType.contains("json")){
-                    channels = gson.fromJson(new InputStreamReader(is), JSONChannel[].class);
-                    System.out.println("GSON PARSED");
-                }
-            } catch (Exception e) {
-                System.err.println(e.toString());
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void voids) {
-            final ListView lv;
-
-            if (contentType.contains("xml")) {
-                lv = findViewById(R.id.lv);
-                cameraAdapter = new CameraArrayAdapter(MainActivity.this, cameraArrayList);
-                lv.setAdapter(cameraAdapter);
-
-                lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                lv.setClickable(true);
-                lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-                    @Override
-                    public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                        Camera o = (Camera) lv.getItemAtPosition(position);
-                        String str = o.name;//As you are using Default String Adapter
-                        Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
-                        ImageLoader task = new ImageLoader();
-                        task.execute(position);
-                    }
-                });
-                DownloadWebPageTask task1 = new DownloadWebPageTask();
-                task1.execute( URL_CHANNELS_JSON);
-
-            }else if(contentType.contains("json")) {
-                for (JSONChannel channel : channels) {
-                    String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
-                    String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
-                    LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
-                    int storePos =  0;
-                    double min_distance = 1000000;
-                    //Calculate nearest camera and store its index
-                    for (int i = 0; i < cameraArrayList.size(); i++) {
-                         /* * * * * * * * * * * * * * * * * * * * * * * *
-                        * For measuring distance we consider in madrid: *
-                        *           1 latitude degree -> 111km          *
-                        *           1 longitude degree -> 85km          *
-                        * * * * * * * * * * * * * * * * * * * * * * * * */
-                        double distance = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude)*111, 2)
-                                + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude)*85, 2);
-                        if (distance < min_distance){
-                            min_distance = distance;
-                            storePos = i;
-                        }
-                    }
-                    mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
-                }
-                connectToMQTTChannels();
-            }
-        }
+    public void setCameraArrayList(ArrayList<Camera> cameraArrayList){
+        this.cameraArrayList = cameraArrayList;
     }
 
-    @SuppressLint("StaticFieldLeak")
-    private class ImageLoader extends AsyncTask<Integer, Void, Bitmap>{
-        int pos;
+    public ArrayList<Camera> getCameraArrayList(){return cameraArrayList;}
 
-        @Override
-        protected Bitmap doInBackground(Integer... params) {
-            pos = params[0];
-            String url = cameraArrayList.get(pos).URL;
+    public void setMqttChannels(ArrayList<MqttChannel> mqttChannelArrayList){
+        this.mqttChannelArrayList = mqttChannelArrayList;
+    }
 
-            URL imageUrl;
-            Bitmap imagen = null;
-            try{
-                imageUrl = new URL(url);
-                HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
-                conn.connect();
-                imagen = BitmapFactory.decodeStream(conn.getInputStream());
-            }catch(IOException ex){
-                ex.printStackTrace();
+    public void printCameraList(){
+        final ListView lv;
+
+        lv = findViewById(R.id.lv);
+        cameraAdapter = new CameraArrayAdapter(MainActivity.this, cameraArrayList);
+        lv.setAdapter(cameraAdapter);
+
+        lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        lv.setClickable(true);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
+                Camera o = (Camera) lv.getItemAtPosition(position);
+                String str = o.name;//As you are using Default String Adapter
+                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
+                ImageLoader task = new ImageLoader(MainActivity.this);
+                task.execute(position);
             }
+        });
+    }
 
-            return imagen;
-        }
-
-        @Override
-        protected void onPostExecute(Bitmap result) {
-            im.setImageBitmap(result);
-            im.setOnClickListener( new View.OnClickListener(){
-                public void onClick(View v){
-                    Intent intent = new Intent (v.getContext(), MapsActivity.class);
-                    Bundle args = new Bundle();
-                    args.putParcelable("coordinates", cameraArrayList.get(pos).position);
-                    args.putString("cameraName", cameraArrayList.get(pos).name);
-                    args.putDouble("valCont", cameraArrayList.get(pos).valCont);
-                    intent.putExtra("bundle",args);
-                    startActivity(intent);
-                }
-            });
-        }
+    public void downloadJSONChannels(){
+        DownloadJSONChannels task1 = new DownloadJSONChannels(this);
+        final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
+        task1.execute(URL_CHANNELS_JSON);
     }
 }
