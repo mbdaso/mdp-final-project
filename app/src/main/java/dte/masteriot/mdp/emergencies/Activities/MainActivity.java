@@ -40,8 +40,12 @@ public class MainActivity extends AppCompatActivity {
 
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList;
-    private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
+
+    private static final String UserAPIKey = "O2LF267YHMV61A0N";
+    private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
+  /*  private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
+*/
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
 
     private int numEmergencies = 0;
@@ -173,10 +177,11 @@ public class MainActivity extends AppCompatActivity {
     public void subscribeToTopics(){
         String[] topics = new String[mqttChannelArrayList.size()];
         int[] QoS;
-        QoS = new int[]{0, 0, 0, 0};
+        QoS = new int[mqttChannelArrayList.size()];
         int i = 0;
         for (MqttChannel channel : mqttChannelArrayList) {
             topics[i] = channel.subscriptionTopic;
+            QoS[i] = 0;
             i++;
         }
             try {
