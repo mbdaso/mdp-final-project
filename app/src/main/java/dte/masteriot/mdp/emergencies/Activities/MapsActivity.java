@@ -1,6 +1,7 @@
 package dte.masteriot.mdp.emergencies.Activities;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -94,7 +95,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 addCurrPosMarker(currPos);
                 setMapBounds(currPos, camPos);
                 drawMapRoute(currPos, camPos);
-                fusedLocationClient.removeLocationUpdates(locationCallback);
+                stopLocationUpdates();
+               // fusedLocationClient.removeLocationUpdates(locationCallback);
             }
 
 
@@ -118,10 +120,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    @SuppressLint("MissingPermission")
     private void startLocationUpdates() {
-        fusedLocationClient.requestLocationUpdates(locationRequest,
-                locationCallback,
-                Looper.getMainLooper());
+      //  if (requestingLocationUpdates) {
+            fusedLocationClient.requestLocationUpdates(locationRequest,
+                    locationCallback,
+                    Looper.getMainLooper());
+      //  }
     }
     /**
      * Manipulates the map once available.
@@ -277,13 +282,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             return;
                         }
                     }
-                    requestingLocationUpdates = true;
-                    getCurrentLocation();
+                   getCurrentLocation();
                 }
 
             }
         }
     }
+    @SuppressLint("MissingPermission")
     public void getCurrentLocation(){
         requestingLocationUpdates = true;
         fusedLocationClient.getLastLocation()
