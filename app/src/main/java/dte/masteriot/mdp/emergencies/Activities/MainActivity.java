@@ -22,7 +22,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
 import dte.masteriot.mdp.emergencies.Model.Camera;
@@ -40,11 +39,12 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Camera> cameraArrayList;
 
     //MQTT variables
-    private List<MqttChannel> mqttChannels;
+    private ArrayList<MqttChannel> mqttChannelArrayList;
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
 
+    private int numEmergencies = 0;
     private boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     private MqttAndroidClient mqttAndroidClient;
 
@@ -55,20 +55,44 @@ public class MainActivity extends AppCompatActivity {
         setContentView( R.layout.activity_main);
         //It gets the UI elements of the main activity
         text = findViewById(R.id.textView);
-        text.setText("Number of Emergencies: 0");
         ImageView im = findViewById(R.id.imageView);
-        im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
-
-        //It downloads the camera list from the predefined URL
-        DownloadCameraList task1 = new DownloadCameraList(this);
-        task1.execute( URL_CAMERAS );
+        if (savedInstanceState != null) {
+            numEmergencies = savedInstanceState.getInt("numEmergencies");
+            cameraArrayList = savedInstanceState.getParcelableArrayList("cameraArrayList");
+            mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
+            printCameraList();
+            connectToMQTTChannels();
+        }else {
+            im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
+            DownloadCameraList task1 = new DownloadCameraList(this);
+            task1.execute( URL_CAMERAS );
+        }
+        text.setText("Number of Emergencies:" + numEmergencies);
     }
 
+    protected void onStart() {
+        super.onStart();
+        //It downloads the camera list from the predefined URL
+    }
+    protected void onStop() {
+        super.onStop();
+        try {
+            mqttAndroidClient.close();
+            mqttAndroidClient.disconnect();
+            addToHistory("Disconnected from " + serverUri + " succesfully");
+        }catch(Exception e){
+            System.err.println(e);
+        }
+    }
 
-
+    protected void onSaveInstanceState(Bundle outState){
+        outState.putInt("numEmergencies", numEmergencies);
+        outState.putParcelableArrayList("cameraArrayList", cameraArrayList);
+        outState.putParcelableArrayList("mqttChannelArrayList", mqttChannelArrayList);
+        super.onSaveInstanceState(outState);
+    }
     public void connectToMQTTChannels(){
         String clientId = "Emergencies_collector";
-
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
@@ -93,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 String payload = new String(message.getPayload());
                 addToHistory("Incoming message: " + payload);
                 int i = 0;
-                for(MqttChannel mqttChannel : mqttChannels){
+                for(MqttChannel mqttChannel : mqttChannelArrayList){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
                         updateEmergencies(i, Double.valueOf(payload) >= 100);
                         cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Double.valueOf(payload)); //Set cont value
@@ -147,11 +171,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void subscribeToTopics(){
-        String[] topics = new String[mqttChannels.size()];
+        String[] topics = new String[mqttChannelArrayList.size()];
         int[] QoS;
         QoS = new int[]{0, 0, 0, 0};
         int i = 0;
-        for (MqttChannel channel : mqttChannels) {
+        for (MqttChannel channel : mqttChannelArrayList) {
             topics[i] = channel.subscriptionTopic;
             i++;
         }
@@ -178,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("DefaultLocale")
     void updateEmergencies(int nTopic, boolean emergency){
         firedEmer[nTopic] = emergency;
-        int numEmergencies = 0;
+        numEmergencies = 0;
         for (int i = 0; i<4; i++) {
             numEmergencies += firedEmer[i] ? 1 : 0;
         }
@@ -192,8 +216,8 @@ public class MainActivity extends AppCompatActivity {
 
     public ArrayList<Camera> getCameraArrayList(){return cameraArrayList;}
 
-    public void setMqttChannels(ArrayList<MqttChannel> mqttChannels){
-        this.mqttChannels = mqttChannels;
+    public void setMqttChannels(ArrayList<MqttChannel> mqttChannelArrayList){
+        this.mqttChannelArrayList = mqttChannelArrayList;
     }
 
     public void printCameraList(){
