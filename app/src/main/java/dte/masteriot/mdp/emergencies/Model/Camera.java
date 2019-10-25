@@ -21,6 +21,7 @@ public class Camera implements Parcelable {
         this.URL = URL;
         this.position = position;
     }
+
     protected Camera(Parcel in) {
         URL = in.readString();
         name = in.readString();
