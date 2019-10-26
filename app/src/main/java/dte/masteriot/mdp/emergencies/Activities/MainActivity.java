@@ -3,6 +3,7 @@ package dte.masteriot.mdp.emergencies.Activities;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
@@ -46,11 +48,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String MQTTAPIKey = "A0ECZ80BBI8FKPPB";
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
     private MqttService mqttService;
+    private ImageView im;
 
     private int numEmergencies = 0;
     private boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     private Bitmap lastImageBitmap;
-    private int lastImagePos = -1;
+    //private int lastImagePos = -1;
     private static final int START_MAPS_ACTIVITY = 7;
 
     @SuppressLint("SetTextI18n")
@@ -60,22 +63,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
         //It gets the UI elements of the main activity
+        im = findViewById(R.id.imageView);
         text = findViewById(R.id.textView);
-        ImageView im = findViewById(R.id.imageView);
-        if (savedInstanceState != null) {
-            numEmergencies = savedInstanceState.getInt("numEmergencies");
-            cameraArrayList = savedInstanceState.getParcelableArrayList("cameraArrayList");
-            mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
-            printCameraList();
-            //TODO: guardar mqttService en un bundle
-            startMqttService();
-            if(lastImagePos != -1){ //Recuperar bitmap del bundle
-//                Bitmap bitmap=getArguments().getByteArray("bitByte");
-//                return new AlertDialog().Builder(getActivity());
-                //https://stackoverflow.com/questions/33797036/how-to-send-the-bitmap-into-bundle
-            }
-        }else {
-            im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
+        if (savedInstanceState == null){
+            //im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
             DownloadCameraList task1 = new DownloadCameraList(this);
             task1.execute( URL_CAMERAS );
         }
@@ -91,12 +82,37 @@ public class MainActivity extends AppCompatActivity {
             System.err.println(e);
         }
     }
+    protected void onRestoreInstanceState(Bundle savedInstanceState){
+        super.onRestoreInstanceState(savedInstanceState);
+        addToHistory("onSavedInstanceState");
+        numEmergencies = savedInstanceState.getInt("numEmergencies");
+        cameraArrayList = savedInstanceState.getParcelableArrayList("cameraArrayList");
+        mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
+        firedEmer = savedInstanceState.getBooleanArray("firedEmer");
+        mqttService = savedInstanceState.getParcelable("mqttService");
+        printCameraList();
+        startMqttService();
 
+        /*byte[] byteArray = savedInstanceState.getByteArray("lastImageBitmap");
+        lastImageBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
+        if(lastImageBitmap != null){
+            im.setImageBitmap(lastImageBitmap);
+        }*/
+
+    }
     protected void onSaveInstanceState(Bundle outState){
         addToHistory("onSavedInstanceState");
         outState.putInt("numEmergencies", numEmergencies);
         outState.putParcelableArrayList("cameraArrayList", cameraArrayList);
         outState.putParcelableArrayList("mqttChannelArrayList", mqttChannelArrayList);
+        outState.putBooleanArray("firedEmer", firedEmer);
+        outState.putParcelable("mqttService", mqttService);
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        /*lastImageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] byteArray = stream.toByteArray();
+        outState.putByteArray("lastImageBitmap",byteArray);*/
+
         super.onSaveInstanceState(outState);
     }
 
@@ -157,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView im = findViewById(R.id.imageView);
         im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
         lastImageBitmap = bitmap;
-        lastImagePos = pos;
+        //lastImagePos = pos;
         im.setImageBitmap(bitmap);
         im.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v){
@@ -191,7 +207,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startMqttService() {
-        mqttService = new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
+        if(mqttService == null)
+            mqttService= new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
         mqttService.start();
     }
 

@@ -1,5 +1,7 @@
 package dte.masteriot.mdp.emergencies.Services;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -18,7 +20,7 @@ import java.util.UUID;
 import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 
-public class MqttService {
+public class MqttService implements Parcelable {
     private static final String TAG = "Pepe";
     private final String MQTTAPIKey;
     private final String userAPIKey;
@@ -27,7 +29,7 @@ public class MqttService {
     private MqttAndroidClient mqttAndroidClient;
     private MqttConnectOptions mqttConnectOptions;
     private String serverUri;
-    ArrayList<MqttChannel> mqttChannelArrayList;
+    private ArrayList<MqttChannel> mqttChannelArrayList;
 
     public MqttService(MainActivity mainActivity_,
                        String serverUri, String userAPIKey,
@@ -40,7 +42,20 @@ public class MqttService {
         this.mqttChannelArrayList = mqttChannelArrayList;
     }
 
-    public void subscribeToTopics(){
+
+    public static final Creator<MqttService> CREATOR = new Creator<MqttService>() {
+        @Override
+        public MqttService createFromParcel(Parcel in) {
+            return new MqttService(in);
+        }
+
+        @Override
+        public MqttService[] newArray(int size) {
+            return new MqttService[size];
+        }
+    };
+
+    private void subscribeToTopics(){
         String[] topics = new String[mqttChannelArrayList.size()];
         int[] QoS;
         QoS = new int[mqttChannelArrayList.size()];
@@ -164,5 +179,25 @@ public class MqttService {
         mqttAndroidClient.close();
         mqttAndroidClient.disconnect();
         Log.d(TAG, "Disconnected from " + serverUri + " succesfully");
+    }
+
+    private MqttService(Parcel in) {
+        MQTTAPIKey = in.readString();
+        userAPIKey = in.readString();
+        serverUri = in.readString();
+        mqttChannelArrayList = in.createTypedArrayList(MqttChannel.CREATOR);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(MQTTAPIKey);
+        dest.writeString(userAPIKey);
+        dest.writeString(serverUri);
+        dest.writeTypedList(mqttChannelArrayList);
     }
 }
