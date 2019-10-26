@@ -73,6 +73,9 @@ public class MainActivity extends AppCompatActivity {
             if(lastImagePos != -1){ //Recuperar bitmap del bundle
 //                Bitmap bitmap=getArguments().getByteArray("bitByte");
 //                return new AlertDialog().Builder(getActivity());
+
+
+
                 //https://stackoverflow.com/questions/33797036/how-to-send-the-bitmap-into-bundle
             }
         }else {

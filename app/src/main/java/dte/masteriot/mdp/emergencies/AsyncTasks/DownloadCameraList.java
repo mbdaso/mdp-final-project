@@ -78,8 +78,7 @@ public class DownloadCameraList extends AsyncTask<String, Void, Void> {
                 eventType = parser.next();
             }
             for (int i = 0; i < nameURLS_ArrayList.size(); i++) {
-                if(!nameURLS_ArrayList.get(i).matches("CUATRO CAMINOS"))
-                    cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
+                cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
             }
         } catch (Exception e) {
             System.err.println(e.toString());
