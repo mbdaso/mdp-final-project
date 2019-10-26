@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies.Model;
+package dte.masteriot.mdp.emergencies.Services;
 
 
 import android.util.Log;
@@ -26,21 +26,6 @@ Ahora hay que:
 
 public class YOURSRoute {
     String TAG = "MapsActivity";
-
-    private LatLng currentPosition = new LatLng(40.389877, -3.629053);
-    /*
-     * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&
-     * tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
-     * */
-    private String baseURL = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml";
-    private String paramsEnd = "&v=motorcar&fast=1&layer=mapnik&instructions=1";
-    //TODO: ask for transport type
-    private String transport_type = "v=foot";
-    private String flat; // latitude of the starting location.
-    private String flon; // longitude of the starting location.
-    private String tlat; // latitude of the end location.
-    private String tlon; // longitude of the end location.
-    private List<LatLng> route;
 
     /*PROBANDO RUTAS
      *

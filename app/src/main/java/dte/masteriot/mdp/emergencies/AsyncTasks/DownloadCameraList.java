@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies.Activities;
+package dte.masteriot.mdp.emergencies.AsyncTasks;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -14,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
+import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.Camera;
 
 public class DownloadCameraList extends AsyncTask<String, Void, Void> {

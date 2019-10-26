@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies.Activities;
+package dte.masteriot.mdp.emergencies.Services;
 
 import android.util.Log;
 
@@ -15,6 +15,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 
 public class MqttService {
