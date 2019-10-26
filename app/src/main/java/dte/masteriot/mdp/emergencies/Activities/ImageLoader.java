@@ -44,20 +44,7 @@ class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
     }
 
     @Override
-    protected void onPostExecute(Bitmap result) {
-        ImageView im = mainActivity.findViewById(R.id.imageView);
-        im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
-        im.setImageBitmap(result);
-        im.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v){
-                Intent intent = new Intent (v.getContext(), MapsActivity.class);
-                Bundle args = new Bundle();
-                args.putParcelable("coordinates", mainActivity.getCameraArrayList().get(pos).position);
-                args.putString("cameraName", mainActivity.getCameraArrayList().get(pos).name);
-                args.putDouble("valCont", mainActivity.getCameraArrayList().get(pos).valCont);
-                intent.putExtra("bundle",args);
-                mainActivity.startActivity(intent);
-            }
-        });
+    protected void onPostExecute(Bitmap bitmap) {
+        mainActivity.setImageBitmapAndListener(bitmap, pos);
     }
 }

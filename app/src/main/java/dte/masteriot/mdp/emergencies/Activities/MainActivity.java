@@ -1,6 +1,8 @@
 package dte.masteriot.mdp.emergencies.Activities;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -51,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     private int numEmergencies = 0;
     private boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
     private MqttAndroidClient mqttAndroidClient;
+    private Bitmap lastImageBitmap;
+    private int lastImagePos = -1;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -66,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
             mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
             printCameraList();
             connectToMQTTChannels();
+            if(lastImagePos >= -1){
+                //https://stackoverflow.com/questions/33797036/how-to-send-the-bitmap-into-bundle
+            }
         }else {
             im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
             DownloadCameraList task1 = new DownloadCameraList(this);
@@ -95,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         outState.putParcelableArrayList("mqttChannelArrayList", mqttChannelArrayList);
         super.onSaveInstanceState(outState);
     }
+
     public void connectToMQTTChannels(){
         String clientId = "Emergencies_collector";
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
@@ -241,8 +249,8 @@ public class MainActivity extends AppCompatActivity {
                 Camera o = (Camera) lv.getItemAtPosition(position);
                 String str = o.name;//As you are using Default String Adapter
                 Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
-                ImageLoader task = new ImageLoader(MainActivity.this);
-                task.execute(position);
+                ImageLoader task = new ImageLoader(MainActivity.this); //ImageLoader task
+                task.execute(position); //position = posicion en ListView
             }
         });
     }
@@ -251,5 +259,24 @@ public class MainActivity extends AppCompatActivity {
         DownloadJSONChannels task1 = new DownloadJSONChannels(this);
         final String URL_CHANNELS_JSON = "https://api.thingspeak.com/channels.json?api_key=" + UserAPIKey;
         task1.execute(URL_CHANNELS_JSON);
+    }
+
+    public void setImageBitmapAndListener(Bitmap bitmap, final int pos) {
+        ImageView im = findViewById(R.id.imageView);
+        im.setImageResource(R.mipmap.upmiot); //To check how to show this image bigger
+        lastImageBitmap = bitmap;
+        lastImagePos = pos;
+        im.setImageBitmap(bitmap);
+        im.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v){
+                Intent intent = new Intent (v.getContext(), MapsActivity.class);
+                Bundle args = new Bundle();
+                args.putParcelable("coordinates", getCameraArrayList().get(pos).position);
+                args.putString("cameraName", getCameraArrayList().get(pos).name);
+                args.putDouble("valCont", getCameraArrayList().get(pos).valCont);
+                intent.putExtra("bundle",args);
+                startActivity(intent);
+            }
+        });
     }
 }
