@@ -17,11 +17,11 @@ import java.util.ArrayList;
 import dte.masteriot.mdp.emergencies.Model.Camera;
 
 public class DownloadCameraList extends AsyncTask<String, Void, Void> {
-MainActivity mainActivity;
+    MainActivity mainActivity;
 
-public DownloadCameraList(MainActivity mainActivity){
-    this.mainActivity = mainActivity;
-}
+    public DownloadCameraList(MainActivity mainActivity){
+        this.mainActivity = mainActivity;
+    }
     private String contentType = "";
 
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
@@ -77,7 +77,8 @@ public DownloadCameraList(MainActivity mainActivity){
                 eventType = parser.next();
             }
             for (int i = 0; i < nameURLS_ArrayList.size(); i++) {
-                cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
+                if(!nameURLS_ArrayList.get(i).matches("CUATRO CAMINOS"))
+                    cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
             }
         } catch (Exception e) {
             System.err.println(e.toString());
