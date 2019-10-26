@@ -335,6 +335,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         LatLng northEast = new LatLng(latNE, lngNE);
         LatLng southWest = new LatLng(latSW, lngSW);
+
         //Bounds constructor is (southWest, northEast)
         bounds = new LatLngBounds(southWest, northEast);
 
