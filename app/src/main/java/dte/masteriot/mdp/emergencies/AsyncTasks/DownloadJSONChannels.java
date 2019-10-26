@@ -1,5 +1,6 @@
 package dte.masteriot.mdp.emergencies.AsyncTasks;
 
+import android.location.Location;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -52,23 +53,40 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
             String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
             String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
             LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
+            //Method 1: approximation calculation
+            int storePosI = 0;
+            double min_distanceI = 1000000;
+
+            //Method 2: using API Location method
             int storePos = 0;
-            double min_distance = 1000000;
+            float min_distance = 100000000;
             //Calculate nearest camera and store its index
             for (int i = 0; i < cameraArrayList.size(); i++) {
                 /* * * * * * * * * * * * * * * * * * * * * * * *
                  * For measuring distance we consider in madrid: *
                  *           1 latitude degree -> 111km          *
                  *           1 longitude degree -> 85km          *
+                 *    METHOD 1                                   *
                  * * * * * * * * * * * * * * * * * * * * * * * * */
-                double distance = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude) * 111, 2)
+                double distanceI = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude) * 111, 2)
                         + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude) * 85, 2);
+
+                if(distanceI < min_distanceI){
+                    min_distanceI = distanceI;
+                    storePosI = i;
+                }
+                //Method 2: API method
+                float[] results = new float[3];
+                Location.distanceBetween(position.latitude, position.longitude, cameraArrayList.get(i).position.latitude, cameraArrayList.get(i).position.longitude, results);
+                float distance = results[0];
                 if (distance < min_distance) {
                     min_distance = distance;
                     storePos = i;
                 }
             }
             mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
+            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePos).name + " distance: "+ min_distance);
+            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePosI).name + " distanceI: "+ min_distanceI);
         }
         mainActivity.setMqttChannels(mqttChannels);
         mainActivity.startMqttService();

@@ -27,32 +27,6 @@ Ahora hay que:
 public class YOURSRoute {
     String TAG = "MapsActivity";
 
-    /*PROBANDO RUTAS
-     *
-     * Origen 40.378729, -3.613838
-     * Destino 40.021892, -3.626836 (al sur)
-     * (longitud, latitud)
-     * */
-
-    /*fast = 1 selects the fastest route, 0 the shortest route. Default is: 1.
-layer = determines which Gosmore instance is used to calculate the route. Provide mapnik for normal routing using car, bicycle or foot. Provide cn for using bicycle routing using cycle route networks only. Default is: mapnik.
-format = specifies the format (KML or geoJSON) in which the route result is being sent back to the client. This can either be kml or geojson. Default is: kml.
-geometry = enables/disables adding the route geometry in the output. Options are 1 to include the route geometry in the output or 0 to exclude it. Default is: 1.
-distance = specifies which algorithm is used to calculate the route distance. This returned value is always in metric units (km), independent of the chosen language. Options are v for Vicenty, gc for simplified Great Circle, h for Haversine Law, cs for Cosine Law. Default is: v. Implemented using the geography class from Simon Holywell.
-instructions = enbles/disables adding driving instructions in the output. Options are 1 to include driving directions, 0 to disable driving directions. Default is 0.
-lang = specifies the language code in which the routing directions are returned. Distances in the instructions are given in metric or imperial units depending on the chosen language. Default is en_US (English). Options are:*/
-
-
-
-    /*
-    * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
-    * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&
-    flat=52.215676&flon=5.963946&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
-    * */
-    /*Esta url va bien
-     * http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&%20flat=40.452162&flon=-3.725778&tlat=52.2573&tlon=6.1799&v=motorcar&fast=1&layer=mapnik&instructions=1
-     * */
-
     private URL buildRouteURL(LatLng source, LatLng dest)
             throws UnsupportedEncodingException, MalformedURLException {
         //TODO: Por qué los parámetros longitud, latitud van al revés?
