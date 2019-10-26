@@ -16,9 +16,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
+import dte.masteriot.mdp.emergencies.AsyncTasks.DownloadCameraList;
+import dte.masteriot.mdp.emergencies.AsyncTasks.DownloadJSONChannels;
+import dte.masteriot.mdp.emergencies.AsyncTasks.ImageLoader;
 import dte.masteriot.mdp.emergencies.Model.Camera;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 import dte.masteriot.mdp.emergencies.R;
+import dte.masteriot.mdp.emergencies.Services.MqttService;
 
 public class MainActivity extends AppCompatActivity {
     private TextView text;
@@ -65,7 +69,9 @@ public class MainActivity extends AppCompatActivity {
             printCameraList();
             //TODO: guardar mqttService en un bundle
             startMqttService();
-            if(lastImagePos >= -1){
+            if(lastImagePos != -1){ //Recuperar bitmap del bundle
+//                Bitmap bitmap=getArguments().getByteArray("bitByte");
+//                return new AlertDialog().Builder(getActivity());
                 //https://stackoverflow.com/questions/33797036/how-to-send-the-bitmap-into-bundle
             }
         }else {
@@ -99,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("DefaultLocale")
-    void updateEmergencies(int nTopic, boolean emergency){
+    public void updateEmergencies(int nTopic, boolean emergency){
         firedEmer[nTopic] = emergency;
         numEmergencies = 0;
         for (int i = 0; i<4; i++) {

@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.emergencies.Activities;
+package dte.masteriot.mdp.emergencies.AsyncTasks;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -8,11 +8,12 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Arrays;
 import java.util.List;
 
-import dte.masteriot.mdp.emergencies.Model.YOURSRoute;
+import dte.masteriot.mdp.emergencies.Activities.MapsActivity;
+import dte.masteriot.mdp.emergencies.Services.YOURSRoute;
 
 import static androidx.constraintlayout.widget.Constraints.TAG;
 
-class MapRouteTask extends AsyncTask<LatLng, Void, List<LatLng>> {
+public class MapRouteTask extends AsyncTask<LatLng, Void, List<LatLng>> {
     MapsActivity mapsActivity;
     YOURSRoute yoursRoute = new YOURSRoute();
 
