@@ -336,11 +336,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void drawMapRoute(LatLng source, LatLng dest){
-        //Pintamos la ruta
-
         MapRouteTask task = new MapRouteTask(this);
         task.execute(source, dest);
-
     }
 
     public void drawMapRoutePolyline(List<LatLng> route) {

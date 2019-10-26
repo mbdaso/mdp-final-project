@@ -1,6 +1,7 @@
 package dte.masteriot.mdp.emergencies.Activities;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
@@ -16,6 +17,7 @@ import dte.masteriot.mdp.emergencies.Model.JSONChannel;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 
 public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]> {
+    final String TAG = "Pepe";
     Gson gson = new Gson();
 
     ArrayList<MqttChannel> mqttChannels = new ArrayList<>();

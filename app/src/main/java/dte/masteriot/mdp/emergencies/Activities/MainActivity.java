@@ -24,6 +24,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
 import dte.masteriot.mdp.emergencies.Model.Camera;
@@ -42,12 +43,17 @@ public class MainActivity extends AppCompatActivity {
 
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList;
-
-    private static final String UserAPIKey = "O2LF267YHMV61A0N";
-    private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
-  /*  private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
-    private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
+/* ivan/cristina (?)
+private static final String UserAPIKey = "O2LF267YHMV61A0N";
+private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
+ */
+  /*ivan/cristina (?)
+  private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
+  private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
 */
+  //Martín
+    private static final String UserAPIKey = "JI1AKBOFIB3AKH92";
+    private static final String MQTTAPIKey = "A0ECZ80BBI8FKPPB";
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
 
     private int numEmergencies = 0;
@@ -85,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         //It downloads the camera list from the predefined URL
     }
+
     protected void onStop() {
         super.onStop();
         try {
@@ -104,7 +111,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connectToMQTTChannels(){
-        String clientId = "Emergencies_collector";
+        String clientId = UUID.randomUUID().toString();
+        addToHistory("Connecting with clientId 0" + clientId);
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
