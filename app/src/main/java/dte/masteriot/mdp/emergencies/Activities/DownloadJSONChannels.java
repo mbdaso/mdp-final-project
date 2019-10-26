@@ -70,6 +70,6 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
             mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
         }
         mainActivity.setMqttChannels(mqttChannels);
-        mainActivity.connectToMQTTChannels();
+        mainActivity.startMqttService();
     }
 }

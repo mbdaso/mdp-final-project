@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
@@ -14,18 +13,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-
 import java.util.ArrayList;
-import java.util.UUID;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
 import dte.masteriot.mdp.emergencies.Model.Camera;
@@ -33,17 +21,14 @@ import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 import dte.masteriot.mdp.emergencies.R;
 
 public class MainActivity extends AppCompatActivity {
-
     private TextView text;
-
     private CameraArrayAdapter cameraAdapter;
-
     //Camera variables
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private ArrayList<Camera> cameraArrayList;
 
     //MQTT variables
-    private ArrayList<MqttChannel> mqttChannelArrayList;
+    private ArrayList<MqttChannel> mqttChannelArrayList; //TODO:
     /* ivan/cristina (?)
     private static final String UserAPIKey = "O2LF267YHMV61A0N";
     private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
@@ -56,14 +41,13 @@ public class MainActivity extends AppCompatActivity {
     private static final String UserAPIKey = "JI1AKBOFIB3AKH92";
     private static final String MQTTAPIKey = "A0ECZ80BBI8FKPPB";
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
+    private MqttService mqttService;
 
     private int numEmergencies = 0;
     private boolean[] firedEmer = {false, false, false, false}; //Emergencies fired in Madrid
-    private MqttAndroidClient mqttAndroidClient;
     private Bitmap lastImageBitmap;
     private int lastImagePos = -1;
     private static final int START_MAPS_ACTIVITY = 7;
-    private MqttConnectOptions mqttConnectOptions;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -79,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
             cameraArrayList = savedInstanceState.getParcelableArrayList("cameraArrayList");
             mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
             printCameraList();
-            connectToMQTTChannels();
+            //TODO: guardar mqttService en un bundle
+            startMqttService();
             if(lastImagePos >= -1){
                 //https://stackoverflow.com/questions/33797036/how-to-send-the-bitmap-into-bundle
             }
@@ -94,10 +79,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         try {
-            mqttAndroidClient.close();
-            mqttAndroidClient.disconnect();
-            addToHistory("Disconnected from " + serverUri + " succesfully");
-        }catch(Exception e){
+            mqttService.stop();
+        }
+        catch(Exception e){
             System.err.println(e);
         }
     }
@@ -110,127 +94,8 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
     }
 
-    public void connectToMQTTChannels(){
-        setupMqttClient();
-
-        setupMqttOptions();
-
-        tryMqttConnection();
-    }
-
-    private void tryMqttConnection() {
-        try {
-            addToHistory("Connecting to " + serverUri);
-            mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                    disconnectedBufferOptions.setBufferEnabled(true);
-                    disconnectedBufferOptions.setBufferSize(100);
-                    disconnectedBufferOptions.setPersistBuffer(false);
-                    disconnectedBufferOptions.setDeleteOldestMessages(false);
-                    mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    subscribeToTopics();
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    addToHistory("Failed to connect to: " + serverUri);
-                }
-            });
-
-
-        } catch (MqttException ex){
-            ex.printStackTrace();
-        }
-    }
-
-    private void setupMqttOptions() {
-        mqttConnectOptions = new MqttConnectOptions();
-        mqttConnectOptions.setAutomaticReconnect(true);
-        mqttConnectOptions.setCleanSession(true);
-
-        mqttConnectOptions.setUserName( "Emergencies_Collector" );
-        mqttConnectOptions.setPassword( MQTTAPIKey.toCharArray() );
-    }
-
-    private void setupMqttClient() {
-        String clientId = UUID.randomUUID().toString();
-        addToHistory("Connecting with clientId 0" + clientId);
-        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
-        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
-
-                if (reconnect) {
-                    addToHistory("Reconnected to : " + serverURI);
-                    // Because Clean Session is true, we need to re-subscribe
-                    subscribeToTopics();
-                } else {
-                    addToHistory("Connected to: " + serverURI);
-                }
-            }
-
-            @Override
-            public void connectionLost(Throwable cause) {
-                addToHistory("The Connection was lost.");
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage message){
-                String payload = new String(message.getPayload());
-                addToHistory("Incoming message: " + payload);
-                int i = 0;
-                for(MqttChannel mqttChannel : mqttChannelArrayList){
-                    if(mqttChannel.subscriptionTopic.equals(topic)){
-                        updateEmergencies(i, Double.valueOf(payload) >= 100);
-                        cameraArrayList.get(mqttChannel.associatedCamera).setValCont(Double.valueOf(payload)); //Set cont value
-                        cameraAdapter.notifyDataSetChanged();
-                        break;
-                    }
-                    i++;
-                }
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-            }
-        });
-    }
-
     private void addToHistory(String mainText){
         System.out.println("LOG: " + mainText);
-    }
-
-    public void subscribeToTopics(){
-        String[] topics = new String[mqttChannelArrayList.size()];
-        int[] QoS;
-        QoS = new int[mqttChannelArrayList.size()];
-        int i = 0;
-        for (MqttChannel channel : mqttChannelArrayList) {
-            addToHistory("Subscribing to ");
-            topics[i] = channel.subscriptionTopic;
-            QoS[i] = 0;
-            i++;
-        }
-        try {
-            mqttAndroidClient.subscribe(topics, QoS, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    addToHistory("Subscribed to " + asyncActionToken.getTopics().length + " topics!");
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    addToHistory("Failed to subscribe");
-                }
-
-            });
-
-        } catch (MqttException ex) {
-            System.err.println("Exception whilst subscribing");
-            ex.printStackTrace();
-        }
     }
 
     @SuppressLint("DefaultLocale")
@@ -310,14 +175,22 @@ public class MainActivity extends AppCompatActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 try {
-//                    mqttAndroidClient.connect(mqttConnectOptions);
-//                    subscribeToTopics();
-                    connectToMQTTChannels();
+                    mqttService.connect();
                 }
                 catch (Exception e){
                     addToHistory("Exception in onActivityResult: " + e.getMessage());
                 }
             }
         }
+    }
+
+    public void startMqttService() {
+        mqttService = new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
+        mqttService.start();
+    }
+
+    public void setContaminationValue(int associatedCamera, Double value) {
+        cameraArrayList.get(associatedCamera).setValCont(value); //Set cont value
+        cameraAdapter.notifyDataSetChanged();
     }
 }

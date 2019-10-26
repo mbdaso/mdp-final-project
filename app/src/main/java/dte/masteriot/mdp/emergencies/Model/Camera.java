@@ -2,6 +2,7 @@ package dte.masteriot.mdp.emergencies.Model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -20,6 +21,8 @@ public class Camera implements Parcelable {
         this.name =  name;
         this.URL = URL;
         this.position = position;
+
+        Log.d("Pepe", name + " " + this.URL + " " + position.toString());
     }
 
     protected Camera(Parcel in) {
