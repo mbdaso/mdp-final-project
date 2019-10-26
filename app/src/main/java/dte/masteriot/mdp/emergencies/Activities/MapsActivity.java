@@ -112,6 +112,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    public void onBackPressed(){
+        setResult(RESULT_OK);
+        finish();
+    }
+
     @SuppressLint("MissingPermission")
     private void startLocationUpdates() {
       //  if (requestingLocationUpdates) {

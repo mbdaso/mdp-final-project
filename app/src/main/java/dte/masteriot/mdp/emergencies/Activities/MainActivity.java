@@ -61,6 +61,7 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
     private MqttAndroidClient mqttAndroidClient;
     private Bitmap lastImageBitmap;
     private int lastImagePos = -1;
+    private static final int START_MAPS_ACTIVITY = 7;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -283,8 +284,25 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
                 args.putString("cameraName", getCameraArrayList().get(pos).name);
                 args.putDouble("valCont", getCameraArrayList().get(pos).valCont);
                 intent.putExtra("bundle",args);
-                startActivity(intent);
+                startActivityForResult(intent, START_MAPS_ACTIVITY);
             }
         });
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        addToHistory("onActivityResult");
+        // Check which request we're responding to
+        if (requestCode == START_MAPS_ACTIVITY) {
+            addToHistory("requestcode = start maps activity");
+            // Make sure the request was successful
+            if (resultCode == RESULT_OK) {
+                connectToMQTTChannels();
+            }
+        }
+    }
+
+
+
+
 }
