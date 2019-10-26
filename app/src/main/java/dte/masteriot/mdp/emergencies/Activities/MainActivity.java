@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
@@ -43,15 +44,15 @@ public class MainActivity extends AppCompatActivity {
 
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList;
-/* ivan/cristina (?)
-private static final String UserAPIKey = "O2LF267YHMV61A0N";
-private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
- */
+    /* ivan/cristina (?)
+    private static final String UserAPIKey = "O2LF267YHMV61A0N";
+    private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
+     */
   /*ivan/cristina (?)
   private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
   private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
 */
-  //Martín
+    //Martín
     private static final String UserAPIKey = "JI1AKBOFIB3AKH92";
     private static final String MQTTAPIKey = "A0ECZ80BBI8FKPPB";
     private final String serverUri = "tcp://mqtt.thingspeak.com:1883";
@@ -62,10 +63,12 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
     private Bitmap lastImageBitmap;
     private int lastImagePos = -1;
     private static final int START_MAPS_ACTIVITY = 7;
+    private MqttConnectOptions mqttConnectOptions;
 
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        addToHistory("onCreate");
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_main);
         //It gets the UI elements of the main activity
@@ -88,11 +91,6 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
         text.setText("Number of Emergencies:" + numEmergencies);
     }
 
-    protected void onStart() {
-        super.onStart();
-        //It downloads the camera list from the predefined URL
-    }
-
     protected void onStop() {
         super.onStop();
         try {
@@ -105,6 +103,7 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
     }
 
     protected void onSaveInstanceState(Bundle outState){
+        addToHistory("onSavedInstanceState");
         outState.putInt("numEmergencies", numEmergencies);
         outState.putParcelableArrayList("cameraArrayList", cameraArrayList);
         outState.putParcelableArrayList("mqttChannelArrayList", mqttChannelArrayList);
@@ -112,6 +111,50 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
     }
 
     public void connectToMQTTChannels(){
+        setupMqttClient();
+
+        setupMqttOptions();
+
+        tryMqttConnection();
+    }
+
+    private void tryMqttConnection() {
+        try {
+            addToHistory("Connecting to " + serverUri);
+            mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                    disconnectedBufferOptions.setBufferEnabled(true);
+                    disconnectedBufferOptions.setBufferSize(100);
+                    disconnectedBufferOptions.setPersistBuffer(false);
+                    disconnectedBufferOptions.setDeleteOldestMessages(false);
+                    mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+                    subscribeToTopics();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    addToHistory("Failed to connect to: " + serverUri);
+                }
+            });
+
+
+        } catch (MqttException ex){
+            ex.printStackTrace();
+        }
+    }
+
+    private void setupMqttOptions() {
+        mqttConnectOptions = new MqttConnectOptions();
+        mqttConnectOptions.setAutomaticReconnect(true);
+        mqttConnectOptions.setCleanSession(true);
+
+        mqttConnectOptions.setUserName( "Emergencies_Collector" );
+        mqttConnectOptions.setPassword( MQTTAPIKey.toCharArray() );
+    }
+
+    private void setupMqttClient() {
         String clientId = UUID.randomUUID().toString();
         addToHistory("Connecting with clientId 0" + clientId);
         mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
@@ -153,38 +196,6 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
             public void deliveryComplete(IMqttDeliveryToken token) {
             }
         });
-
-        MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
-        mqttConnectOptions.setAutomaticReconnect(true);
-        mqttConnectOptions.setCleanSession(true);
-
-        mqttConnectOptions.setUserName( "Emergencies_Collector" );
-        mqttConnectOptions.setPassword( MQTTAPIKey.toCharArray() );
-
-        try {
-            addToHistory("Connecting to " + serverUri);
-            mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                    disconnectedBufferOptions.setBufferEnabled(true);
-                    disconnectedBufferOptions.setBufferSize(100);
-                    disconnectedBufferOptions.setPersistBuffer(false);
-                    disconnectedBufferOptions.setDeleteOldestMessages(false);
-                    mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    subscribeToTopics();
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    addToHistory("Failed to connect to: " + serverUri);
-                }
-            });
-
-
-        } catch (MqttException ex){
-            ex.printStackTrace();
-        }
     }
 
     private void addToHistory(String mainText){
@@ -197,29 +208,30 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
         QoS = new int[mqttChannelArrayList.size()];
         int i = 0;
         for (MqttChannel channel : mqttChannelArrayList) {
+            addToHistory("Subscribing to ");
             topics[i] = channel.subscriptionTopic;
             QoS[i] = 0;
             i++;
         }
-            try {
-                mqttAndroidClient.subscribe(topics, QoS, null, new IMqttActionListener() {
-                    @Override
-                    public void onSuccess(IMqttToken asyncActionToken) {
-                        addToHistory("Subscribed to " + asyncActionToken.getTopics().length + " topics!");
-                    }
+        try {
+            mqttAndroidClient.subscribe(topics, QoS, null, new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    addToHistory("Subscribed to " + asyncActionToken.getTopics().length + " topics!");
+                }
 
-                    @Override
-                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                        addToHistory("Failed to subscribe");
-                    }
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    addToHistory("Failed to subscribe");
+                }
 
-                });
+            });
 
-            } catch (MqttException ex) {
-                System.err.println("Exception whilst subscribing");
-                ex.printStackTrace();
-            }
+        } catch (MqttException ex) {
+            System.err.println("Exception whilst subscribing");
+            ex.printStackTrace();
         }
+    }
 
     @SuppressLint("DefaultLocale")
     void updateEmergencies(int nTopic, boolean emergency){
@@ -297,12 +309,15 @@ private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
             addToHistory("requestcode = start maps activity");
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
-                connectToMQTTChannels();
+                try {
+//                    mqttAndroidClient.connect(mqttConnectOptions);
+//                    subscribeToTopics();
+                    connectToMQTTChannels();
+                }
+                catch (Exception e){
+                    addToHistory("Exception in onActivityResult: " + e.getMessage());
+                }
             }
         }
     }
-
-
-
-
 }

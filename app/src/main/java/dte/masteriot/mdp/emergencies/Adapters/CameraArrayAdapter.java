@@ -39,6 +39,7 @@ public class CameraArrayAdapter extends ArrayAdapter {
         //-----
 
         CheckedTextView textView = newView.findViewById(R.id.listOfCameras);
+        //listOfCameras is the layout for a camera list item
 
 
         Camera camera = items.get(position);
