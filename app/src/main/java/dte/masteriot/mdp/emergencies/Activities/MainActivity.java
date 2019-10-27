@@ -53,26 +53,36 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         addToHistory("onCreate");
         super.onCreate(savedInstanceState);
-        setContentView( R.layout.activity_main);
+        setContentView(R.layout.activity_main);
         //It gets the UI elements of the main activity
         text = findViewById(R.id.textView);
-        if (savedInstanceState == null){
+        if (savedInstanceState == null) {
             DownloadCameraList task1 = new DownloadCameraList(this);
-            task1.execute( URL_CAMERAS );
+            task1.execute(URL_CAMERAS);
         }
         text.setText("Number of Emergencies:" + numEmergencies);
     }
 
-    protected void onStop() {
-        super.onStop();
+    protected void onPause() {
+        super.onPause();
         try {
             mqttService.stop();
         } catch (MqttException e) {
-            System.err.println(e);
+            System.err.println("Exception in onPause -> stop: " + e.getMessage());
         }
     }
 
-
+    protected void onResume() {
+        super.onResume();
+        if (mqttService != null) {
+            try {
+                mqttService.connect();
+            } catch (Exception e) {
+                System.err.println("Exception in onResume: " + e.getMessage());
+            }
+        }
+    }
+    
     @Override
     protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState){
         super.onRestoreInstanceState(savedInstanceState);
@@ -185,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
+/*    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         addToHistory("onActivityResult");
         // Check which request we're responding to
@@ -202,12 +212,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+*/
     public void startMqttService() {
         String serverUri = "tcp://mqtt.thingspeak.com:1883";
         if(mqttService == null)
-            mqttService= new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
+            mqttService = new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
         mqttService.start();
+
     }
 
     public void setContaminationValue(int associatedCamera, Double value) {

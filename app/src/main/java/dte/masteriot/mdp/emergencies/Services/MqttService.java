@@ -42,26 +42,13 @@ public class MqttService implements Parcelable {
         this.mqttChannelArrayList = mqttChannelArrayList;
     }
 
-
-    public static final Creator<MqttService> CREATOR = new Creator<MqttService>() {
-        @Override
-        public MqttService createFromParcel(Parcel in) {
-            return new MqttService(in);
-        }
-
-        @Override
-        public MqttService[] newArray(int size) {
-            return new MqttService[size];
-        }
-    };
-
     private void subscribeToTopics(){
         String[] topics = new String[mqttChannelArrayList.size()];
         int[] QoS;
         QoS = new int[mqttChannelArrayList.size()];
         int i = 0;
         for (MqttChannel channel : mqttChannelArrayList) {
-            Log.d(TAG, "Subscribing to ");
+            Log.d(TAG, "Subscribing to " + channel.subscriptionTopic);
             topics[i] = channel.subscriptionTopic;
             QoS[i] = 0;
             i++;
@@ -100,6 +87,8 @@ public class MqttService implements Parcelable {
             mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
+                    Log.d(TAG,"Connected succesfully");
+
                     DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                     disconnectedBufferOptions.setBufferEnabled(true);
                     disconnectedBufferOptions.setBufferSize(100);
@@ -176,10 +165,24 @@ public class MqttService implements Parcelable {
     }
 
     public void stop() throws MqttException{
+        //mqttAndroidClient.unregisterResources();
         mqttAndroidClient.close();
         mqttAndroidClient.disconnect();
         Log.d(TAG, "Disconnected from " + serverUri + " succesfully");
     }
+
+    //Parcelable methods and constructor
+    public static final Creator<MqttService> CREATOR = new Creator<MqttService>() {
+        @Override
+        public MqttService createFromParcel(Parcel in) {
+            return new MqttService(in);
+        }
+
+        @Override
+        public MqttService[] newArray(int size) {
+            return new MqttService[size];
+        }
+    };
 
     private MqttService(Parcel in) {
         MQTTAPIKey = in.readString();
