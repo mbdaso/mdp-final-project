@@ -1,20 +1,15 @@
 package dte.masteriot.mdp.emergencies.AsyncTasks;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageView;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 import dte.masteriot.mdp.emergencies.Activities.MainActivity;
-import dte.masteriot.mdp.emergencies.R;
 
 @SuppressLint("StaticFieldLeak")
 public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
@@ -46,6 +41,6 @@ public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
 
     @Override
     protected void onPostExecute(Bitmap bitmap) {
-        mainActivity.setImageBitmapAndListener(bitmap, pos);
+        mainActivity.setImagePosAndListener(bitmap, pos);
     }
 }

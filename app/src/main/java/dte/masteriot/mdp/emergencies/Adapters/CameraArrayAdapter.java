@@ -34,6 +34,7 @@ public class CameraArrayAdapter extends ArrayAdapter {
         if (newView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            assert inflater != null;
             newView = inflater.inflate(R.layout.camera_item_list, parent, false);
         }
         //-----

@@ -21,7 +21,7 @@ import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 
 public class MqttService implements Parcelable {
-    private static final String TAG = "Pepe";
+    private static final String TAG = "MQTTService";
     private final String MQTTAPIKey;
     private final String userAPIKey;
 
@@ -96,7 +96,7 @@ public class MqttService implements Parcelable {
 
     public void connect() {
         try {
-            System.out.println("Connecting to " + serverUri);
+            Log.d(TAG,"Connecting to " + serverUri);
             mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
@@ -111,7 +111,7 @@ public class MqttService implements Parcelable {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    System.out.println("Failed to connect to: " + serverUri);
+                    Log.d(TAG,"Failed to connect to: " + serverUri);
                 }
             });
 
