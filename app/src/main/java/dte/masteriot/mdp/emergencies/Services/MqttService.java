@@ -149,7 +149,7 @@ public class MqttService implements Parcelable {
                 int i = 0;
                 for(MqttChannel mqttChannel : mqttChannelArrayList){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
-                        mainActivity.updateEmergencies(i, Double.valueOf(payload) >= 100);
+                        mainActivity.updateEmergencies(i, Double.valueOf(payload) > 100);
                         mainActivity.setContaminationValue(mqttChannel.associatedCamera, Double.valueOf(payload));
                         break;
                     }
