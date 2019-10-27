@@ -10,6 +10,7 @@ public class Camera implements Parcelable {
     public String URL;
     public String name;
     public LatLng position;
+    public LatLng channelPosition;
     public double valCont = -1;
 
 

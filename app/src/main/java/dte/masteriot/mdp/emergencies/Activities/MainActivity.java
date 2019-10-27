@@ -170,6 +170,8 @@ public class MainActivity extends AppCompatActivity {
                 args.putParcelable("coordinates", getCameraArrayList().get(pos).position);
                 args.putString("cameraName", getCameraArrayList().get(pos).name);
                 args.putDouble("valCont", getCameraArrayList().get(pos).valCont);
+                //Enhancement: to add the marker of the channel
+                args.putParcelable("channelPos", getCameraArrayList().get(pos).channelPosition);
                 intent.putExtra("bundle",args);
                 startActivityForResult(intent, START_MAPS_ACTIVITY);
             }

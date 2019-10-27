@@ -40,10 +40,10 @@ import dte.masteriot.mdp.emergencies.R;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    LatLng camPos, currPos;
+    LatLng camPos, currPos, channelPos;
     String cameraName;
     RadioButton rbMap, rbSatellite, rbHybrid;
-    Marker camMarker, currPositionMarker;
+    Marker camMarker, currPositionMarker, channelMarker;
     private String TAG = "MapsActivity";
     double valCont;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
@@ -74,6 +74,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         args = this.getIntent().getParcelableExtra("bundle");
         camPos = (LatLng) args.getParcelable("coordinates");
         cameraName = args.getString("cameraName");
+        channelPos = args.getParcelable("channelPos");
         //Handles location object
         valCont = args.getDouble("valCont");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -153,6 +154,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             camMarker = mMap.addMarker(new MarkerOptions().position(camPos).title(cameraName)
                     .snippet("Last measured value:" + valCont + "NO2 µg/m3" ));
         camMarker.showInfoWindow();
+        //Enhancement: to include channel marker
+        Log.e("Enhancement: ", "Channel position: "+channelPos);
+        if(channelPos != null && valCont > 100){
+            channelMarker = mMap.addMarker(new MarkerOptions().position(channelPos).title("Channel").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE)));
+            Log.e("Enhancement", "Marcador añadido para canal "+channelPos+ " camPos: "+camPos);
+        }
     }
 
     public void onRadioButtonClicked(View view) {

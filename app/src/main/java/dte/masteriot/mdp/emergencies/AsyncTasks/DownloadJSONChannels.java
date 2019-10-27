@@ -85,7 +85,9 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
                 }
             }
             mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
-            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePos).name + " distance: "+ min_distance);
+            //Enhancement: Assigns the channel position to the closest camera
+            cameraArrayList.get(storePos).channelPosition = position;
+            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePos).name + " distance: "+ min_distance + " Channel position: "+ cameraArrayList.get(storePos).channelPosition);
             Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePosI).name + " distanceI: "+ min_distanceI);
         }
         mainActivity.setMqttChannels(mqttChannels);
