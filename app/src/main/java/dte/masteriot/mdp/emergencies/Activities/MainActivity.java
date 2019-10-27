@@ -60,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
             DownloadCameraList task1 = new DownloadCameraList(this);
             task1.execute(URL_CAMERAS);
         }
-        text.setText("Number of Emergencies:" + numEmergencies);
     }
 
     protected void onPause() {
@@ -72,17 +71,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void onResume() {
-        super.onResume();
-        if (mqttService != null) {
-            try {
-                mqttService.connect();
-            } catch (Exception e) {
-                System.err.println("Exception in onResume: " + e.getMessage());
-            }
-        }
-    }
-    
     @Override
     protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState){
         super.onRestoreInstanceState(savedInstanceState);
@@ -95,14 +83,30 @@ public class MainActivity extends AppCompatActivity {
         printCameraList();
         startMqttService();
 
-        lastImagePos = savedInstanceState.getInt("lastImagePos");
-        ImageLoader task = new ImageLoader(this);
-        task.execute(lastImagePos);
+        lastImagePos = savedInstanceState.getInt("lastImagePos", -1);
+        if (lastImagePos != -1) {
+            ImageLoader task = new ImageLoader(this);
+
+            task.execute(lastImagePos);
+        }
         /*byte[] byteArray = savedInstanceState.getByteArray("lastImageBitmap");
         lastImageBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
         if(lastImageBitmap != null){
             im.setImageBitmap(lastImageBitmap);
         }*/
+
+    }
+
+    protected void onResume() {
+        super.onResume();
+        if (mqttService != null) {
+            try {
+                mqttService.connect();
+            } catch (Exception e) {
+                System.err.println("Exception in onResume: " + e.getMessage());
+            }
+        }
+        text.setText("Number of Emergencies:" + numEmergencies);
 
     }
 
