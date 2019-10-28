@@ -10,7 +10,7 @@ public class Camera implements Parcelable {
     public String URL;
     public String name;
     public LatLng position;
-    public LatLng channelPosition;
+    public LatLng channelPosition = null;
     public double valCont = -1;
 
 
@@ -30,6 +30,7 @@ public class Camera implements Parcelable {
         URL = in.readString();
         name = in.readString();
         position = in.readParcelable(LatLng.class.getClassLoader());
+        channelPosition = in.readParcelable(LatLng.class.getClassLoader());
         valCont = in.readDouble();
     }
 
@@ -55,6 +56,7 @@ public class Camera implements Parcelable {
         parcel.writeString(URL);
         parcel.writeString(name);
         parcel.writeParcelable(position, i);
+        parcel.writeParcelable(channelPosition, i);
         parcel.writeDouble(valCont);
     }
 }

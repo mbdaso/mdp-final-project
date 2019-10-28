@@ -10,8 +10,8 @@ public class MqttChannel implements Parcelable {
     public LatLng position;
     public String publishTopic;
     public String subscriptionTopic;
-    public int associatedCamera;
-    public MqttChannel(String channel_number, LatLng position, String publishAPIkey, String subscriberAPIkey, int associatedCamera){
+    public String associatedCamera;
+    public MqttChannel(String channel_number, LatLng position, String publishAPIkey, String subscriberAPIkey, String associatedCamera){
         publishTopic =  "channels/" + channel_number + "/publish/fields/field1/" + publishAPIkey;
         subscriptionTopic =  "channels/" + channel_number + "/subscribe/fields/field1/" + subscriberAPIkey;
         this.position = position;
@@ -22,7 +22,7 @@ public class MqttChannel implements Parcelable {
         position = in.readParcelable(LatLng.class.getClassLoader());
         publishTopic = in.readString();
         subscriptionTopic = in.readString();
-        associatedCamera = in.readInt();
+        associatedCamera = in.readString();
     }
 
     public static final Creator<MqttChannel> CREATOR = new Creator<MqttChannel>() {
@@ -47,6 +47,6 @@ public class MqttChannel implements Parcelable {
         parcel.writeParcelable(position, i);
         parcel.writeString(publishTopic);
         parcel.writeString(subscriptionTopic);
-        parcel.writeInt(associatedCamera);
+        parcel.writeString(associatedCamera);
     }
 }

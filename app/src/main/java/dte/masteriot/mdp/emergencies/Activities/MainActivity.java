@@ -229,9 +229,14 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void setContaminationValue(int associatedCamera, Double value) {
-        cameraArrayList.get(associatedCamera).setValCont(value); //Set cont value
-        cameraAdapter.notifyDataSetChanged();
+    public void setContaminationValue(String associatedCamera, Double value) {
+        for(int i=0; i < cameraArrayList.size(); i++) {
+            if (associatedCamera.equals(cameraArrayList.get(i).name)) {
+                cameraArrayList.get(i).setValCont(value); //Set cont value
+                cameraAdapter.notifyDataSetChanged();
+                break;
+            }
+        }
     }
 
     public void sort_by_alphabetic(View view) {

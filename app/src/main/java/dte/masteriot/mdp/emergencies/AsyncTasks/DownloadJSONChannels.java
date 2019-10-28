@@ -58,37 +58,49 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
             double min_distanceI = 1000000;
 
             //Method 2: using API Location method
-            int storePos = 0;
+            String storeCamera = "";
             float min_distance = 100000000;
+            int cameraIndex = 0;
             //Calculate nearest camera and store its index
-            for (int i = 0; i < cameraArrayList.size(); i++) {
+            for (Camera camera :  cameraArrayList) {
                 /* * * * * * * * * * * * * * * * * * * * * * * *
                  * For measuring distance we consider in madrid: *
                  *           1 latitude degree -> 111km          *
                  *           1 longitude degree -> 85km          *
                  *    METHOD 1                                   *
                  * * * * * * * * * * * * * * * * * * * * * * * * */
-                double distanceI = Math.pow((position.latitude - cameraArrayList.get(i).position.latitude) * 111, 2)
-                        + Math.pow((position.longitude - cameraArrayList.get(i).position.longitude) * 85, 2);
+                double distanceI = Math.pow((position.latitude - camera.position.latitude) * 111, 2)
+                        + Math.pow((position.longitude - camera.position.longitude) * 85, 2);
 
                 if(distanceI < min_distanceI){
                     min_distanceI = distanceI;
-                    storePosI = i;
                 }
+
                 //Method 2: API method
                 float[] results = new float[3];
-                Location.distanceBetween(position.latitude, position.longitude, cameraArrayList.get(i).position.latitude, cameraArrayList.get(i).position.longitude, results);
+                Location.distanceBetween(position.latitude, position.longitude, camera.position.latitude, camera.position.longitude, results);
                 float distance = results[0];
                 if (distance < min_distance) {
                     min_distance = distance;
-                    storePos = i;
+                    storeCamera = camera.name;
+                    cameraIndex = cameraArrayList.indexOf(camera);
                 }
+            /*    if(camera.channelPosition == null)
+                    camera.channelPosition = position;
+                else {
+                    Location.distanceBetween(position.latitude, position.longitude, camera.position.latitude, camera.position.longitude, results);
+                    float distance0 = results[0];
+                    if (distance < min_distance) {
+                        min_distance = distance0;
+                        camera.channelPosition = position;
+                    }
+                }*/
             }
-            mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storePos));
+            mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storeCamera));
             //Enhancement: Assigns the channel position to the closest camera
-            cameraArrayList.get(storePos).channelPosition = position;
-            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePos).name + " distance: "+ min_distance + " Channel position: "+ cameraArrayList.get(storePos).channelPosition);
-            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+cameraArrayList.get(storePosI).name + " distanceI: "+ min_distanceI);
+            cameraArrayList.get(cameraIndex).channelPosition = position;
+            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+ storeCamera + "; distance: "+ min_distance + "; Channel position: "+ position);
+            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+ storeCamera + "; distanceI: "+ min_distanceI);
         }
         mainActivity.setMqttChannels(mqttChannels);
         mainActivity.startMqttService();
