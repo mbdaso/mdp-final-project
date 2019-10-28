@@ -46,14 +46,16 @@ public class CameraArrayAdapter extends ArrayAdapter {
         Camera camera = items.get(position);
 
         textView.setText(camera.name);
-        if(camera.valCont > 100)
-        {
+        if(camera.valCont > 100){
             // Set a background color for ListView regular row/item
             newView.setBackgroundColor(Color.RED);
+        }else if(camera.valCont > 50){
+            newView.setBackgroundColor(Color.YELLOW);
+
+        }else if(camera.valCont >= 0) {
+            newView.setBackgroundColor(Color.GREEN);
         }
-        else
-        {
-            // Set the background color for alternate row/item
+        else{
             newView.setBackgroundColor(Color.WHITE);
         }
 
