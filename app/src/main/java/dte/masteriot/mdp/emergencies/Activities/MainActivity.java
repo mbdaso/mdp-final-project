@@ -17,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import dte.masteriot.mdp.emergencies.Adapters.CameraArrayAdapter;
 import dte.masteriot.mdp.emergencies.AsyncTasks.DownloadCameraList;
@@ -230,5 +232,29 @@ public class MainActivity extends AppCompatActivity {
     public void setContaminationValue(int associatedCamera, Double value) {
         cameraArrayList.get(associatedCamera).setValCont(value); //Set cont value
         cameraAdapter.notifyDataSetChanged();
+    }
+
+    public void sort_by_alphabetic(View view) {
+        Collections.sort(cameraArrayList, new Comparator<Camera>() {
+            @Override
+            public int compare(Camera camera, Camera t1) {
+                return (camera.name.compareTo(t1.name));
+            }
+        });
+        cameraAdapter.notifyDataSetChanged();
+
+    }
+
+    public void sort_by_emergencies(View view) {
+        Collections.sort(cameraArrayList, new Comparator<Camera>() {
+            @Override
+            public int compare(Camera camera, Camera t1) {
+                if(camera.valCont > t1.valCont) return -1;
+                else if (camera.valCont < t1.valCont) return 1;
+                else return 0;
+            }
+        });
+        cameraAdapter.notifyDataSetChanged();
+
     }
 }

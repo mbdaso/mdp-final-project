@@ -35,6 +35,37 @@
         android:layout_height="300dp" />
 
 
+    <TextView
+        android:id="@+id/sort_by"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sort list by:" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/sort_alphabetic"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="sort_by_alphabetic"
+            android:text="Alphabetic" />
+
+        <Button
+            android:id="@+id/sort_emergencies"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="sort_by_emergencies"
+            android:text="Contamination" />
+
+    </LinearLayout>
+
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="match_parent"

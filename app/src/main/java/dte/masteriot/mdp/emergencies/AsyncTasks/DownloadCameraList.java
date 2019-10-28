@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.Camera;
@@ -80,6 +82,7 @@ public class DownloadCameraList extends AsyncTask<String, Void, Void> {
             for (int i = 0; i < nameURLS_ArrayList.size(); i++) {
                 cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
             }
+
         } catch (Exception e) {
             System.err.println(e.toString());
         }
