@@ -39,8 +39,8 @@ public class MainActivity extends AppCompatActivity {
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList; //TODO:
     // ivan/cristina (?)
-    private static final String UserAPIKey = "O2LF267YHMV61A0N";
-    private static final String MQTTAPIKey = "T4DBW5CS51EWBCGL";
+    private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
+    private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
 
     private MqttService mqttService;
 
