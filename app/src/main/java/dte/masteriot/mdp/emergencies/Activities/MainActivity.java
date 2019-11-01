@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         cameraAdapter.notifyDataSetChanged();
-
+        sortedByCont = false;
     }
 
     public void sort_by_emergencies(View view) {
