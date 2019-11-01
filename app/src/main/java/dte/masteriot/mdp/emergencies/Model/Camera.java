@@ -10,12 +10,19 @@ public class Camera implements Parcelable {
     public String URL;
     public String name;
     public LatLng position;
-    public LatLng channelPosition = null;
+    private int closestChannel = -1;
     public double valCont = -1;
 
 
     public void setValCont (double valCont){
         this.valCont = valCont;
+    }
+    public void setClosestChannel (int closestChannel){
+        this.closestChannel = closestChannel;
+    }
+
+    public int getClosestChannel() {
+        return closestChannel;
     }
 
     public Camera(String name, String URL, LatLng position){
@@ -30,7 +37,7 @@ public class Camera implements Parcelable {
         URL = in.readString();
         name = in.readString();
         position = in.readParcelable(LatLng.class.getClassLoader());
-        channelPosition = in.readParcelable(LatLng.class.getClassLoader());
+        closestChannel = in.readInt();
         valCont = in.readDouble();
     }
 
@@ -56,7 +63,7 @@ public class Camera implements Parcelable {
         parcel.writeString(URL);
         parcel.writeString(name);
         parcel.writeParcelable(position, i);
-        parcel.writeParcelable(channelPosition, i);
+        parcel.writeInt(closestChannel);
         parcel.writeDouble(valCont);
     }
 }

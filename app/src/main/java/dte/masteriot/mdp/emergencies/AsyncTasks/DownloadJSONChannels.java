@@ -22,7 +22,7 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
     final String TAG = "Pepe";
     Gson gson = new Gson();
 
-    ArrayList<MqttChannel> mqttChannels = new ArrayList<>();
+    ArrayList<MqttChannel> mqttChannels = new ArrayList<MqttChannel>();
     MainActivity mainActivity;
 
     public DownloadJSONChannels(MainActivity mainActivity) {
@@ -53,55 +53,63 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
             String write_api_key = channel.api_keys[0].write_flag ? channel.api_keys[0].api_key : channel.api_keys[1].api_key;
             String read_api_key = channel.api_keys[0].write_flag ? channel.api_keys[1].api_key : channel.api_keys[0].api_key;
             LatLng position = new LatLng(Double.valueOf(channel.latitude), Double.valueOf(channel.longitude));
-            //Method 1: approximation calculation
-            int storePosI = 0;
-            double min_distanceI = 1000000;
 
-            //Method 2: using API Location method
-            String storeCamera = "";
-            float min_distance = 100000000;
-            int cameraIndex = 0;
-            //Calculate nearest camera and store its index
-            for (Camera camera :  cameraArrayList) {
+            mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key));
+        }
+
+        //Now associate each camera to his closest channel
+        for (Camera camera : cameraArrayList){
+            float min_distance_channel = 10000000;
+            for(MqttChannel mqttChannel : mqttChannels){
+                if(camera.getClosestChannel() == -1)
+                    camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
+                else {
+                    float[] results = new float[3];
+                    Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude,
+                            camera.position.latitude, camera.position.longitude, results);
+                    if (results[0] < min_distance_channel) {
+                        min_distance_channel = results[0];
+                        camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
+                    }
+                }
+
+                if(mqttChannel.getAssociatedCamera() == null)
+                    mqttChannel.setAssociatedCamera(camera);
+                else{
+                    float[] newDistanceToCamera = new float[3];
+                    Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude,
+                            camera.position.latitude, camera.position.longitude, newDistanceToCamera);
+
+                    float[] currentDistanceToCamera = new float[3];
+                    Location.distanceBetween(mqttChannel.getAssociatedCamera().position.latitude, mqttChannel.getAssociatedCamera().position.longitude,
+                            mqttChannel.position.latitude, mqttChannel.position.longitude, currentDistanceToCamera);
+                    if(newDistanceToCamera[0] < currentDistanceToCamera[0])
+                        mqttChannel.setAssociatedCamera(camera);
+                }
                 /* * * * * * * * * * * * * * * * * * * * * * * *
                  * For measuring distance we consider in madrid: *
                  *           1 latitude degree -> 111km          *
                  *           1 longitude degree -> 85km          *
                  *    METHOD 1                                   *
                  * * * * * * * * * * * * * * * * * * * * * * * * */
-                double distanceI = Math.pow((position.latitude - camera.position.latitude) * 111, 2)
-                        + Math.pow((position.longitude - camera.position.longitude) * 85, 2);
+                //Old method to get distance
+                /*double distanceI = Math.pow((mqttChannel.position.latitude - camera.position.latitude) * 111, 2)
+                        + Math.pow((mqttChannel.position.longitude - camera.position.longitude) * 85, 2);
 
-                if(distanceI < min_distanceI){
-                    min_distanceI = distanceI;
-                }
 
+                float min_distance = 100000000;
                 //Method 2: API method
                 float[] results = new float[3];
-                Location.distanceBetween(position.latitude, position.longitude, camera.position.latitude, camera.position.longitude, results);
+                Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude, camera.position.latitude, camera.position.longitude, results);
                 float distance = results[0];
                 if (distance < min_distance) {
                     min_distance = distance;
-                    storeCamera = camera.name;
-                    cameraIndex = cameraArrayList.indexOf(camera);
-                }
-            /*    if(camera.channelPosition == null)
-                    camera.channelPosition = position;
-                else {
-                    Location.distanceBetween(position.latitude, position.longitude, camera.position.latitude, camera.position.longitude, results);
-                    float distance0 = results[0];
-                    if (distance < min_distance) {
-                        min_distance = distance0;
-                        camera.channelPosition = position;
-                    }
                 }*/
             }
-            mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key, storeCamera));
-            //Enhancement: Assigns the channel position to the closest camera
-            cameraArrayList.get(cameraIndex).channelPosition = position;
-            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+ storeCamera + "; distance: "+ min_distance + "; Channel position: "+ position);
-            Log.e(TAG, "Channel "+channel.id+ " close to Camera "+ storeCamera + "; distanceI: "+ min_distanceI);
         }
+        for(MqttChannel mqttChannel : mqttChannels)
+            Log.d(TAG, "Channel "+ mqttChannels.indexOf(mqttChannel)+ " close to Camera "+ mqttChannel.getAssociatedCamera().name);
+
         mainActivity.setMqttChannels(mqttChannels);
         mainActivity.startMqttService();
     }

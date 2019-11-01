@@ -30,6 +30,8 @@ import dte.masteriot.mdp.emergencies.R;
 import dte.masteriot.mdp.emergencies.Services.MqttService;
 
 public class MainActivity extends AppCompatActivity {
+    boolean sortedByCont = false;
+
     private TextView text;
     private CameraArrayAdapter cameraAdapter;
     //Camera variables
@@ -37,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Camera> cameraArrayList;
 
     //MQTT variables
-    private ArrayList<MqttChannel> mqttChannelArrayList; //TODO:
+    private ArrayList<MqttChannel> mqttChannelArrayList;
     // ivan/cristina (?)
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
@@ -67,7 +69,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         try {
-            mqttService.stop();
+            if(mqttService != null)
+                mqttService.stop();
         } catch (MqttException e) {
             System.err.println("Exception in onPause -> stop: " + e.getMessage());
         }
@@ -82,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         mqttChannelArrayList = savedInstanceState.getParcelableArrayList("mqttChannelArrayList");
         firedEmer = savedInstanceState.getBooleanArray("firedEmer");
         mqttService = savedInstanceState.getParcelable("mqttService");
+        sortedByCont = savedInstanceState.getBoolean("sortedByCont");
         printCameraList();
         startMqttService();
 
@@ -108,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 System.err.println("Exception in onResume: " + e.getMessage());
             }
         }
-        text.setText("Number of Emergencies:" + numEmergencies);
+        text.setText(String.format("Number of Emergencies:%d", numEmergencies));
 
     }
 
@@ -121,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
         outState.putBooleanArray("firedEmer", firedEmer);
         outState.putParcelable("mqttService", mqttService);
         outState.putInt("lastImagePos", lastImagePos);
+        outState.putBoolean("sortedByCont", sortedByCont);
         /*ByteArrayOutputStream stream = new ByteArrayOutputStream();
         lastImageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         byte[] byteArray = stream.toByteArray();
@@ -134,8 +139,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("DefaultLocale")
-    public void updateEmergencies(int nTopic, boolean emergency){
+    public void updateEmergencies(int nTopic, double value){
+        boolean emergency = value > 100;
         firedEmer[nTopic] = emergency;
+        mqttChannelArrayList.get(nTopic).setReportedValue(value);
         numEmergencies = 0;
         for (int i = 0; i<4; i++) {
             numEmergencies += firedEmer[i] ? 1 : 0;
@@ -196,47 +203,44 @@ public class MainActivity extends AppCompatActivity {
                 args.putString("cameraName", getCameraArrayList().get(pos).name);
                 args.putDouble("valCont", getCameraArrayList().get(pos).valCont);
                 //Enhancement: to add the marker of the channel
-                args.putParcelable("channelPos", getCameraArrayList().get(pos).channelPosition);
+                args.putParcelable("closestChannel", mqttChannelArrayList.get(getCameraArrayList().get(pos).getClosestChannel()));
                 intent.putExtra("bundle",args);
                 startActivityForResult(intent, START_MAPS_ACTIVITY);
             }
         });
     }
 
-/*    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        addToHistory("onActivityResult");
-        // Check which request we're responding to
-        if (requestCode == START_MAPS_ACTIVITY) {
-            addToHistory("requestcode = start maps activity");
-            // Make sure the request was successful
-            if (resultCode == RESULT_OK) {
-                try {
-                    mqttService.connect();
-                }
-                catch (Exception e){
-                    addToHistory("Exception in onActivityResult: " + e.getMessage());
-                }
-            }
-        }
-    }
-*/
     public void startMqttService() {
         String serverUri = "tcp://mqtt.thingspeak.com:1883";
         if(mqttService == null)
             mqttService = new MqttService(this, serverUri, UserAPIKey, MQTTAPIKey, mqttChannelArrayList);
         mqttService.start();
-
     }
 
-    public void setContaminationValue(String associatedCamera, Double value) {
-        for(int i=0; i < cameraArrayList.size(); i++) {
-            if (associatedCamera.equals(cameraArrayList.get(i).name)) {
-                cameraArrayList.get(i).setValCont(value); //Set cont value
+    public void setContaminationValue(Camera associatedCamera, Double value) {
+        //int i = cameraArrayList.indexOf(associatedCamera);
+        //TODO: PROBAR ESO
+
+        for(Camera camera : cameraArrayList)
+            if (associatedCamera.name.equals(camera.name)) {
+                camera.setValCont(value); //Set cont value
                 cameraAdapter.notifyDataSetChanged();
                 break;
             }
+
+        if(sortedByCont) {
+            Collections.sort(cameraArrayList, new Comparator<Camera>() {
+                @Override
+                public int compare(Camera camera, Camera t1) {
+                    if (camera.valCont > t1.valCont) return -1;
+                    else if (camera.valCont < t1.valCont) return 1;
+                    else return 0;
+                }
+            });
+            sortedByCont = true;
+            cameraAdapter.notifyDataSetChanged();
         }
+
     }
 
     public void sort_by_alphabetic(View view) {
@@ -259,6 +263,7 @@ public class MainActivity extends AppCompatActivity {
                 else return 0;
             }
         });
+        sortedByCont = true;
         cameraAdapter.notifyDataSetChanged();
 
     }

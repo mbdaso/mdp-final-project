@@ -35,12 +35,14 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import java.util.List;
 
 import dte.masteriot.mdp.emergencies.AsyncTasks.MapRouteTask;
+import dte.masteriot.mdp.emergencies.Model.MqttChannel;
 import dte.masteriot.mdp.emergencies.R;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    LatLng camPos, currPos, channelPos;
+    LatLng camPos, currPos;
+    MqttChannel closestChannel;
     String cameraName;
     RadioButton rbMap, rbSatellite, rbHybrid;
     Marker camMarker, currPositionMarker, channelMarker;
@@ -74,7 +76,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         args = this.getIntent().getParcelableExtra("bundle");
         camPos = (LatLng) args.getParcelable("coordinates");
         cameraName = args.getString("cameraName");
-        channelPos = args.getParcelable("channelPos");
+        closestChannel = args.getParcelable("closestChannel");
         //Handles location object
         valCont = args.getDouble("valCont");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -155,11 +157,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .snippet("Last measured value:" + valCont + "NO2 µg/m3" ));
         camMarker.showInfoWindow();
         //Enhancement: to include channel marker
-        Log.e("Enhancement: ", "Channel position: "+channelPos);
-        if(channelPos != null && valCont > 100){
-            channelMarker = mMap.addMarker(new MarkerOptions().position(channelPos).title("Channel").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE)));
-            Log.e("Enhancement", "Marcador añadido para canal "+channelPos+ " camPos: "+camPos);
+        Log.e("Enhancement: ", "Channel position: "+closestChannel.position);
+        if(closestChannel != null){// && valCont > 100){
+            float[] distance = new float[3];
+            Location.distanceBetween(camPos.latitude, camPos.longitude,
+                    closestChannel.position.latitude, closestChannel.position.longitude, distance);
+            channelMarker = mMap.addMarker(new MarkerOptions().position(closestChannel.position)
+                    .title("Channel").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
+                    .snippet(String.format("Distance to camera: %.0f m; ", distance[0]) + System.getProperty("line.separator") + "Last value reported: " + closestChannel.getReportedValue() + " NO2 µg/m3"));
+            Log.e("Enhancement", "Marcador del canal añadido");
+            channelMarker.showInfoWindow();
         }
+
     }
 
     public void onRadioButtonClicked(View view) {
@@ -172,7 +181,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if (checked) {
                     Log.e(TAG, "RB Map");
                     mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
                 }
                 break;
             case R.id.rbSatellite:

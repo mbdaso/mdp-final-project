@@ -24,7 +24,6 @@ public class MqttService implements Parcelable {
     private static final String TAG = "MQTTService";
     private final String MQTTAPIKey;
     private final String userAPIKey;
-
     private MainActivity mainActivity;
     private MqttAndroidClient mqttAndroidClient;
     private MqttConnectOptions mqttConnectOptions;
@@ -149,8 +148,8 @@ public class MqttService implements Parcelable {
                 int i = 0;
                 for(MqttChannel mqttChannel : mqttChannelArrayList){
                     if(mqttChannel.subscriptionTopic.equals(topic)){
-                        mainActivity.updateEmergencies(i, Double.valueOf(payload) > 100);
-                        mainActivity.setContaminationValue(mqttChannel.associatedCamera, Double.valueOf(payload));
+                        mainActivity.setContaminationValue(mqttChannel.getAssociatedCamera(), Double.valueOf(payload));
+                        mainActivity.updateEmergencies(i, Double.valueOf(payload));
                         break;
                     }
                     i++;
