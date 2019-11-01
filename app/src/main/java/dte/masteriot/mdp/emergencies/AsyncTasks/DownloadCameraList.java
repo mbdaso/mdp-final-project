@@ -19,6 +19,7 @@ import java.util.Comparator;
 import dte.masteriot.mdp.emergencies.Activities.MainActivity;
 import dte.masteriot.mdp.emergencies.Model.Camera;
 
+/*AsyncTask to retrieve the list of cameras*/
 public class DownloadCameraList extends AsyncTask<String, Void, Void> {
     MainActivity mainActivity;
 
@@ -38,6 +39,7 @@ public class DownloadCameraList extends AsyncTask<String, Void, Void> {
         HttpURLConnection urlConnection;
 
         try {
+            //It gets the URL object for the url to parse to get the cameras' list
             URL url = new URL(urls[0]);
             urlConnection = (HttpURLConnection) url.openConnection();
             contentType = urlConnection.getContentType();
@@ -50,6 +52,9 @@ public class DownloadCameraList extends AsyncTask<String, Void, Void> {
             String aux;
 
             int eventType = parser.getEventType();
+            /*It parses the content and assigns the value to the different arrays (camera's image url,
+            * camera's name, camera's position
+            */
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 String elementName;
                 elementName = parser.getName();
@@ -79,6 +84,7 @@ public class DownloadCameraList extends AsyncTask<String, Void, Void> {
                 }
                 eventType = parser.next();
             }
+            //Once the content is parsed, the array of Camera objects is built
             for (int i = 0; i < nameURLS_ArrayList.size(); i++) {
                 cameraArrayList.add(new Camera(nameURLS_ArrayList.get(i), camerasURLS_ArrayList.get(i), coorURLS_ArrayList.get(i)));
             }

@@ -78,9 +78,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //Handles location object
         valCont = args.getDouble("valCont");
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
+                //If locationResult is not null: it adds the marker of the current location of the user,
+                // sets map bounds containing camera and user locations, draws the route
+                // and stops location updates of the user
                 if (locationResult == null) {
                     return;
                 }
@@ -105,7 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback);
     }
-
+//It gets user updated location
     @Override
     protected void onResume() {
         super.onResume();
@@ -131,11 +135,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
      * If Google Play services is not installed on the device, the user will be prompted to install
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
+     * It adds camera marker and channel marker if applicable
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -161,7 +164,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.e("Enhancement", "Marcador añadido para canal "+channelPos+ " camPos: "+camPos);
         }
     }
-
+//It changes map type to the one selected by the user
     public void onRadioButtonClicked(View view) {
         // Is the button now checked?
         boolean checked = ((RadioButton) view).isChecked();
@@ -232,6 +235,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // permissionFineGranted = Manifest.permission.ACCESS_FINE_LOCATION;
         }*/
     }
+    /*It checks the user's input regarding requested permissions
+    * If the user grants location permissions, then user's location is retrieved
+    * */
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         //Check if permission request response is from Location
         int length = grantResults.length;
@@ -294,6 +300,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
     }
+
+    /*It retrieves user's current location (only if permissions are granted)
+    * If the location is retrieved, the marker is added to the map and the route is drawn
+    * If there is no location available, it is requested
+    * */
     @SuppressLint("MissingPermission")
     public void getCurrentLocation(){
         requestingLocationUpdates = true;
@@ -326,7 +337,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         currPositionMarker.showInfoWindow();
 
     }
-
+/*It calculate the bounds of the map depending on both markers' latitudes and longitudes*/
     public void setMapBounds(LatLng p1, LatLng p2){
         double latP1 = p1.latitude;
         double latP2 = p2.latitude;
@@ -349,12 +360,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
 
     }
-
+/*It launches the task to draw the route*/
     public void drawMapRoute(LatLng source, LatLng dest){
         MapRouteTask task = new MapRouteTask(this);
         task.execute(source, dest);
     }
 
+    /*It draws the polyline containing the points of the route between the two points*/
     public void drawMapRoutePolyline(List<LatLng> route) {
         PolylineOptions options = new PolylineOptions().width(10).color(Color.BLUE).geodesic(true);
         for(LatLng point: route){

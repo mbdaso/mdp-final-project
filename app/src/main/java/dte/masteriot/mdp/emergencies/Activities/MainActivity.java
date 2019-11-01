@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList; //TODO:
-    // ivan/cristina (?)
+    // API Keys
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
 
@@ -133,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("LOG: " + mainText);
     }
 
+    //Updates number of emergencies detected
     @SuppressLint("DefaultLocale")
     public void updateEmergencies(int nTopic, boolean emergency){
         firedEmer[nTopic] = emergency;
@@ -154,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
         this.mqttChannelArrayList = mqttChannelArrayList;
     }
 
+
     public void printCameraList(){
         final ListView lv;
 
@@ -171,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 String str = o.name;//As you are using Default String Adapter
                 Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
                 ImageLoader task = new ImageLoader(MainActivity.this); //ImageLoader task
-                task.execute(position); //position = posicion en ListView
+                task.execute(position); //position = position en ListView
             }
         });
     }
@@ -239,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Implements alphabetic sorting
     public void sort_by_alphabetic(View view) {
         Collections.sort(cameraArrayList, new Comparator<Camera>() {
             @Override
@@ -249,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
         cameraAdapter.notifyDataSetChanged();
 
     }
-
+    //Implements pollution value sorting
     public void sort_by_emergencies(View view) {
         Collections.sort(cameraArrayList, new Comparator<Camera>() {
             @Override
