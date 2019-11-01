@@ -41,6 +41,7 @@ public class MqttChannel implements Parcelable {
         publishTopic = in.readString();
         subscriptionTopic = in.readString();
         associatedCamera = in.readParcelable(Camera.class.getClassLoader());
+        reportedValue = in.readDouble();
     }
 
     public static final Creator<MqttChannel> CREATOR = new Creator<MqttChannel>() {
@@ -66,5 +67,8 @@ public class MqttChannel implements Parcelable {
         parcel.writeString(publishTopic);
         parcel.writeString(subscriptionTopic);
         parcel.writeParcelable(associatedCamera, i);
+        if(reportedValue !=null) {
+            parcel.writeDouble(reportedValue);
+        }
     }
 }

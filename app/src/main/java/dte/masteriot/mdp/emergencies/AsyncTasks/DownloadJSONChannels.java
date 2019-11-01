@@ -57,13 +57,13 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
             mqttChannels.add(new MqttChannel(Integer.toString(channel.id), position, write_api_key, read_api_key));
         }
 
-        //Now associate each camera to his closest channel
+        //Now associate each camera to its closest channel
         for (Camera camera : cameraArrayList){
             float min_distance_channel = 10000000;
             for(MqttChannel mqttChannel : mqttChannels){
-                if(camera.getClosestChannel() == -1)
+           /*     if(camera.getClosestChannel() == -1)
                     camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
-                else {
+                else {*/
                     float[] results = new float[3];
                     Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude,
                             camera.position.latitude, camera.position.longitude, results);
@@ -71,7 +71,7 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
                         min_distance_channel = results[0];
                         camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
                     }
-                }
+             //   }
 
                 if(mqttChannel.getAssociatedCamera() == null)
                     mqttChannel.setAssociatedCamera(camera);

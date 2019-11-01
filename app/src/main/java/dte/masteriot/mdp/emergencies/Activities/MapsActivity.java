@@ -166,8 +166,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location.distanceBetween(camPos.latitude, camPos.longitude,
                     closestChannel.position.latitude, closestChannel.position.longitude, distance);
             channelMarker = mMap.addMarker(new MarkerOptions().position(closestChannel.position)
-                    .title("Channel").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-                    .snippet(String.format("Distance to camera: %.0f m; ", distance[0]) + System.getProperty("line.separator") + "Last value reported: " + closestChannel.getReportedValue() + " NO2 µg/m3"));
+                    .title("Channel ("+closestChannel.getReportedValue() + " NO2 µg/m3)").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
+                    //.snippet(String.format("Distance to camera: %.0f m; ", distance[0]) + System.getProperty("line.separator") + "Last value reported: " + closestChannel.getReportedValue() + " NO2 µg/m3"));
+                    .snippet(String.format("Distance to camera: %.0f m", distance[0])));
             Log.e("Enhancement", "Marcador del canal añadido");
             channelMarker.showInfoWindow();
         }

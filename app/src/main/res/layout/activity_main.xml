@@ -63,7 +63,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:onClick="sort_by_emergencies"
-            android:text="Contamination" />
+            android:text="Pollution" />
 
     </LinearLayout>
 
