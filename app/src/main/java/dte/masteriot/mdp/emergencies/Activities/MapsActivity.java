@@ -337,7 +337,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         currPositionMarker.showInfoWindow();
 
     }
-/*It calculate the bounds of the map depending on both markers' latitudes and longitudes*/
+/*It calculates the bounds of the map depending on both markers' latitudes and longitudes*/
     public void setMapBounds(LatLng p1, LatLng p2){
         double latP1 = p1.latitude;
         double latP2 = p2.latitude;
