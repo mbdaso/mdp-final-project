@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     //MQTT variables
     private ArrayList<MqttChannel> mqttChannelArrayList;
-    // ivan/cristina (?)
+    // API Keys
     private static final String UserAPIKey = "0IFUPHEW12KUX7JW";
     private static final String MQTTAPIKey = "ZX09Q7X687ORLM2I";
 
@@ -95,12 +95,6 @@ public class MainActivity extends AppCompatActivity {
 
             task.execute(lastImagePos);
         }
-        /*byte[] byteArray = savedInstanceState.getByteArray("lastImageBitmap");
-        lastImageBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
-        if(lastImageBitmap != null){
-            im.setImageBitmap(lastImageBitmap);
-        }*/
-
     }
 
     protected void onResume() {
@@ -126,10 +120,6 @@ public class MainActivity extends AppCompatActivity {
         outState.putParcelable("mqttService", mqttService);
         outState.putInt("lastImagePos", lastImagePos);
         outState.putBoolean("sortedByCont", sortedByCont);
-        /*ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        lastImageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        byte[] byteArray = stream.toByteArray();
-        outState.putByteArray("lastImageBitmap",byteArray);*/
 
         super.onSaveInstanceState(outState);
     }
@@ -138,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("LOG: " + mainText);
     }
 
+    //Updates number of emergencies detected
     @SuppressLint("DefaultLocale")
     public void updateEmergencies(int nTopic, double value){
         boolean emergency = value > 100;
@@ -178,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                 String str = o.name;//As you are using Default String Adapter
                 Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
                 ImageLoader task = new ImageLoader(MainActivity.this); //ImageLoader task
-                task.execute(position); //position = posicion en ListView
+                task.execute(position); //position = position in ListView
             }
         });
     }
@@ -219,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void setContaminationValue(Camera associatedCamera, Double value) {
         //int i = cameraArrayList.indexOf(associatedCamera);
-        //TODO: PROBAR ESO
 
         for(Camera camera : cameraArrayList)
             if (associatedCamera.name.equals(camera.name)) {
@@ -240,9 +230,9 @@ public class MainActivity extends AppCompatActivity {
             sortedByCont = true;
             cameraAdapter.notifyDataSetChanged();
         }
-
     }
 
+    //Implements alphabetic sorting
     public void sort_by_alphabetic(View view) {
         Collections.sort(cameraArrayList, new Comparator<Camera>() {
             @Override
@@ -253,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
         cameraAdapter.notifyDataSetChanged();
 
     }
-
+    //Implements pollution value sorting
     public void sort_by_emergencies(View view) {
         Collections.sort(cameraArrayList, new Comparator<Camera>() {
             @Override
@@ -265,6 +255,5 @@ public class MainActivity extends AppCompatActivity {
         });
         sortedByCont = true;
         cameraAdapter.notifyDataSetChanged();
-
     }
 }

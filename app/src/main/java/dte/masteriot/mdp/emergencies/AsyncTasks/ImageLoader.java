@@ -10,7 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import dte.masteriot.mdp.emergencies.Activities.MainActivity;
-
+//Task to download the last image taken from camera's URL
 @SuppressLint("StaticFieldLeak")
 public class ImageLoader extends AsyncTask<Integer, Void, Bitmap> {
     private MainActivity mainActivity;

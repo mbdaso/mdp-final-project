@@ -46,6 +46,8 @@ public class CameraArrayAdapter extends ArrayAdapter {
         Camera camera = items.get(position);
 
         textView.setText(camera.name);
+        /*Depending on the pollution value, the background of the camera item in the list turns one
+        * color or another (RED, YELLOW, GREEN, WHITE)*/
         if(camera.valCont > 100){
             // Set a background color for ListView regular row/item
             newView.setBackgroundColor(Color.RED);
