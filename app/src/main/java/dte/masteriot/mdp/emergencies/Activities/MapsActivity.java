@@ -168,7 +168,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             channelMarker = mMap.addMarker(new MarkerOptions().position(closestChannel.position)
                     .title("Channel ("+closestChannel.getReportedValue() + " NO2 µg/m3)").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
                     //.snippet(String.format("Distance to camera: %.0f m; ", distance[0]) + System.getProperty("line.separator") + "Last value reported: " + closestChannel.getReportedValue() + " NO2 µg/m3"));
-                    .snippet(String.format("Distance to camera: %.0f m", distance[0])));
+                    .snippet(String.format("Distance to camera: %.0f", distance[0])));
             Log.e("Enhancement", "Marcador del canal añadido");
             channelMarker.showInfoWindow();
         }
@@ -365,9 +365,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Bounds constructor is (southWest, northEast)
         bounds = new LatLngBounds(southWest, northEast);
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
-
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
     }
 /*It launches the task to draw the route*/
     public void drawMapRoute(LatLng source, LatLng dest){
