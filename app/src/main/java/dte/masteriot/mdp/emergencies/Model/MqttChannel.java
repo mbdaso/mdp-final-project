@@ -25,7 +25,6 @@ public class MqttChannel implements Parcelable {
         publishTopic =  "channels/" + channel_number + "/publish/fields/field1/" + publishAPIkey;
         subscriptionTopic =  "channels/" + channel_number + "/subscribe/fields/field1/" + subscriberAPIkey;
         this.position = position;
-        //this.associatedCamera = associatedCamera;
     }
 
     public void setAssociatedCamera(Camera associatedCamera) {
