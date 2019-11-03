@@ -61,9 +61,7 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
         for (Camera camera : cameraArrayList){
             float min_distance_channel = 10000000;
             for(MqttChannel mqttChannel : mqttChannels){
-           /*     if(camera.getClosestChannel() == -1)
-                    camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
-                else {*/
+
                     float[] results = new float[3];
                     Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude,
                             camera.position.latitude, camera.position.longitude, results);
@@ -71,7 +69,7 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
                         min_distance_channel = results[0];
                         camera.setClosestChannel(mqttChannels.indexOf(mqttChannel));
                     }
-             //   }
+
 
                 if(mqttChannel.getAssociatedCamera() == null)
                     mqttChannel.setAssociatedCamera(camera);
@@ -86,25 +84,7 @@ public class DownloadJSONChannels extends AsyncTask<String, Void, JSONChannel[]>
                     if(newDistanceToCamera[0] < currentDistanceToCamera[0])
                         mqttChannel.setAssociatedCamera(camera);
                 }
-                /* * * * * * * * * * * * * * * * * * * * * * * *
-                 * For measuring distance we consider in madrid: *
-                 *           1 latitude degree -> 111km          *
-                 *           1 longitude degree -> 85km          *
-                 *    METHOD 1                                   *
-                 * * * * * * * * * * * * * * * * * * * * * * * * */
-                //Old method to get distance
-                /*double distanceI = Math.pow((mqttChannel.position.latitude - camera.position.latitude) * 111, 2)
-                        + Math.pow((mqttChannel.position.longitude - camera.position.longitude) * 85, 2);
 
-
-                float min_distance = 100000000;
-                //Method 2: API method
-                float[] results = new float[3];
-                Location.distanceBetween(mqttChannel.position.latitude, mqttChannel.position.longitude, camera.position.latitude, camera.position.longitude, results);
-                float distance = results[0];
-                if (distance < min_distance) {
-                    min_distance = distance;
-                }*/
             }
         }
         for(MqttChannel mqttChannel : mqttChannels)

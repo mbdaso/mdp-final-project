@@ -52,8 +52,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 2;
     private static final int PERMISSION_REQUEST_BOTH_LOCATION = 3;
 
-    // String permissionCoarseGranted, permissionFineGranted;
-
     private FusedLocationProviderClient fusedLocationClient;
     LatLngBounds bounds;
     LocationRequest locationRequest;
@@ -96,7 +94,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 setMapBounds(currPos, camPos);
                 drawMapRoute(currPos, camPos);
                 stopLocationUpdates();
-               // fusedLocationClient.removeLocationUpdates(locationCallback);
+
             }
 
 
@@ -167,7 +165,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     closestChannel.position.latitude, closestChannel.position.longitude, distance);
             channelMarker = mMap.addMarker(new MarkerOptions().position(closestChannel.position)
                     .title("Channel ("+closestChannel.getReportedValue() + " NO2 µg/m3)").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-                    //.snippet(String.format("Distance to camera: %.0f m; ", distance[0]) + System.getProperty("line.separator") + "Last value reported: " + closestChannel.getReportedValue() + " NO2 µg/m3"));
                     .snippet(String.format("Distance to camera: %.0f", distance[0])));
             Log.e("Enhancement", "Marcador del canal añadido");
             channelMarker.showInfoWindow();
@@ -239,10 +236,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
 
-        /*else { //If Android version is older, permissions are requested on installation, but we should check if the user granted or denied the permissions ¿?
-           // permissionCoarseGranted = Manifest.permission.ACCESS_COARSE_LOCATION;
-            // permissionFineGranted = Manifest.permission.ACCESS_FINE_LOCATION;
-        }*/
     }
     /*It checks the user's input regarding requested permissions
     * If the user grants location permissions, then user's location is retrieved
@@ -365,7 +358,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Bounds constructor is (southWest, northEast)
         bounds = new LatLngBounds(southWest, northEast);
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
     }
 /*It launches the task to draw the route*/
